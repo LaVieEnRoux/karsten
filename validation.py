@@ -11,12 +11,16 @@ class TidalHeightStats:
     Standards are from NOAA's Standard Suite of Statistics.
 
     Instantiated with two arrays containing predicted and observed
-    data. Functions are used to calculate statistics and to output
+    data, and the times corresponding to the data points. Times are in
+    datetime format.
+
+    Functions are used to calculate statistics and to output
     visualizations and tables.
     '''
-    def __init__(self, model_data, observed_data):
+    def __init__(self, model_data, observed_data, data_times):
         self.model = model_data
         self.observed = observed_data
+        self.time = data_times
         self.error = model_data - observed_data
 
     # establish limits as defined by NOAA standard
@@ -169,3 +173,27 @@ class TidalHeightStats:
         data['conf_level'] = 100 * (1 - alpha)
 
         return data
+
+    def plotData(self, graph='time'):
+        '''
+        Provides a visualization of the data.
+
+        Takes an option which determines the type of graph to be made.
+        time: plots the model data against the observed data over time
+        scatter : plots the model data vs. observed data
+        '''
+        if (graph == 'time'):
+            plt.plot(self.time, self.model, label='Model Predictions')
+            plt.plot(self.time, self.observed, colour='r',
+                     label='Observed Data')
+            plt.xlabel('Time')
+            plt.ylabel('Tidal Height')
+            plt.title('Tidal Heights: Predicted and Observed')
+            plt.show()
+
+        if (graph == 'scatter'):
+            plt.scatter(self.model, self.observed, c='b', alpha=0.5)
+            plt.xlabel('Predicted Height')
+            plt.ylabel('Observed Height')
+            plt.title('Tidal Heights')
+            plt.show()
