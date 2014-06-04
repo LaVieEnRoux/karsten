@@ -24,13 +24,15 @@ def load_coef(filename):
     Puts harmonic data into a struct.
     '''
     data = nc.Dataset(filename, 'r')
-    coef.a = data.variables['coef.a'][:]
-    coef.g = data.variables['coef.g'][:]
-    # load all the other coef vars- INCOMPLETE
+    A = data.variables['A'][:]
+    gA = data.variables['gA'][:]
     lon = data.variables['lon'][:]
     lat = data.variables['lat'][:]
 
-    # load coef vars into coef struct- INCOMPLETE
+    # load coef vars into coef struct- MAY NEED MORE VARS
+    coef = {}
+    coef['A'] = A[:]
+    coef['gA'] = gA[:]
 
     return (coef, lon, lat)
 
