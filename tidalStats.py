@@ -36,7 +36,7 @@ class TidalHeightStats:
         Returns the root mean squared error of the data.
         '''
         n = self.error.size
-        return np.sqrt((self.error**2) / n)
+        return np.sqrt(np.sum(self.error**2) / n)
 
     def getSD(self):
         '''
@@ -134,7 +134,7 @@ class TidalHeightStats:
 
         return stats
 
-    def linReg(self, alpha):
+    def linReg(self, alpha=0.05):
         '''
         Does linear regression on the model data vs. recorded data.
 
@@ -171,6 +171,49 @@ class TidalHeightStats:
         data['CI_lower'] = lower_bound
         data['CI_upper'] = upper_bound
         data['conf_level'] = 100 * (1 - alpha)
+
+        return data
+
+    def crossVal(self, alpha=0.05):
+        '''
+        Performs leave-one-out cross validation on the linear regression.
+
+        i.e. removes one datum from the set, redoes linreg on the training
+        set, and uses the results to attempt to predict the missing datum.
+        '''
+        cross_error = np.zeroes(self.model.size)
+        cross_pred = np.zeroes(self.model.size)
+        model_orig = self.model
+        obs_orig = self.observed
+        time_orig = self.time
+
+        # loop through each element, remove it
+        for i in np.arange(self.model.size):
+            train_mod = np.delete(model_orig, i)
+            train_obs = np.delete(obs_orig, i)
+            train_time = np.delete(time_orig, i)
+            train_stats = TidalHeightStats(train_mod, train_obs, train_time)
+
+            # redo the linear regression and get parameters
+            param = train_stats.linReg(alpha)
+            slope = param['slope']
+            intercept = param['intercept']
+
+            # predict the missing observed value and calculate error
+            pred_obs = slope * model_orig[i] + intercept
+            cross_pred[i] = pred_obs
+            cross_error[i] = abs(pred_obs - obs_orig[i])
+
+        # calculate PRESS and PRRMSE statistics for predicted data
+        # (predicted residual sum of squares and predicted RMSE)
+        PRESS = np.sum(cross_error**2)
+        PRRMSE = np.sqrt(PRESS) / self.model.size
+
+        # return data in a dictionary
+        data = {}
+        data['PRESS'] = PRESS
+        data['PRRMSE'] = PRRMSE
+        data['cross_pred'] = cross_pred
 
         return data
 
