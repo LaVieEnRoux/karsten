@@ -10,16 +10,27 @@ class TidalHeightStats:
     Standards are from NOAA's Standard Suite of Statistics.
 
     Instantiated with two arrays containing predicted and observed
-    data, and the times corresponding to the data points. Times are in
-    datetime format.
+    data, and the times corresponding to the data points. Begins by
+    interpolating timesteps between the datasets so they line up.
 
     Functions are used to calculate statistics and to output
     visualizations and tables.
     '''
-    def __init__(self, model_data, observed_data, data_times):
-        self.model = model_data
-        self.observed = observed_data
-        self.time = data_times
+    def __init__(self, model_data, model_step, observed_data, observed_step):
+        # find gcd between the time steps using euclidean algorithm
+        a = model_step
+        gcd = observed_step
+        while a:
+            a, gcd = a % gcd, a
+
+        # calculate lcm from gcd, and solve: step * x = lcm
+        lcm = model_step * observed_step / gcd
+        mod_coef = lcm / model_step
+        obs_coef = lcm / observed_step
+
+        # slice data as necessary so times line up
+        self.model = model_data[::mod_coef]
+        self.observed = observed_data[::obs_coef]
         self.error = model_data - observed_data
 
     # establish limits as defined by NOAA standard
@@ -270,7 +281,7 @@ class TidalHeightStats:
         plt.title('Modeled vs. Observed: Linear Fit')
         plt.show()
 
-    def plotData(self, graph='time'):
+    def plotData(self, time, graph='time'):
         '''
         Provides a visualization of the data.
 
@@ -279,8 +290,8 @@ class TidalHeightStats:
         scatter : plots the model data vs. observed data
         '''
         if (graph == 'time'):
-            plt.plot(self.time, self.model, label='Model Predictions')
-            plt.plot(self.time, self.observed, colour='r',
+            plt.plot(time, self.model, label='Model Predictions')
+            plt.plot(time, self.observed, colour='r',
                      label='Observed Data')
             plt.xlabel('Time')
             plt.ylabel('Tidal Height')
