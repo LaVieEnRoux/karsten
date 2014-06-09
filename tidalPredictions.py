@@ -1,10 +1,8 @@
-from __future__ import division
-import datetime
+from datetime import datetime, timedelta
 import netCDF4 as nc
 import numpy as np
 import matplotlib.pyplot as plt
-from ut_solv import *
-from ut_reconstr import *
+from ut_reconstr import ut_reconstr
 from mpl_toolkits.basemap import Basemap
 
 
@@ -29,12 +27,14 @@ def load_coef(filename):
     lon = data.variables['lon'][:]
     lat = data.variables['lat'][:]
 
-    # load coef vars into coef struct- MAY NEED MORE VARS
-    coef = {}
-    coef['A'] = A[:]
-    coef['gA'] = gA[:]
+    # load coef vars into list of dictionaries- MAY NEED MORE VARS
+    coef_list = []
+    for i in np.arange(A.shape[0]):
+        coef_list[i] = {}
+        coef_list[i]['A'] = A[i]
+        coef_list[i]['gA'] = gA[i]
 
-    return (coef, lon, lat)
+    return (coef_list, lon, lat)
 
 
 def get_heights(coef, lon, lat, start_date, time_span='day'):
@@ -51,7 +51,7 @@ def get_heights(coef, lon, lat, start_date, time_span='day'):
 
     # change start_date into a datetime format, then into a datenum
     format = '%Y-%m-%d %H:%M:%S.%f'
-    date = datetime.datetime.strptime(start_time, format)
+    date = datetime.datetime.strptime(start_date, format)
     date = datetime2matlabdn(date)
 
     # set up array of timesteps based on defined span
@@ -84,7 +84,7 @@ def draw_tides(time_series, lat, lon, bath):
                 urcrnrlon=lon.max(), llcrnrlat=lat.min(),
                 urcrnrlat=lat.max(), resolution='h')
 
-    # set dry spots to extraneous value -INCOMPLETE
+    # set dry spots to extraneous value -INCOMPLETE, NEEDS BATHYMETRY
 
     # convert lat/lon to x/y projections
     x, y = m(lon, lat)
@@ -94,6 +94,6 @@ def draw_tides(time_series, lat, lon, bath):
                           cmap=plt.cm.jet)
 
     # add lines -INCOMPLETE
-    colorbar(colour)
+    plt.colorbar(colour)
     plt.title('Fundy Bay Tidal Heights')
     plt.show()
