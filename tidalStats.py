@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.stats import t
 import matplotlib.pyplot as plt
-import pandas as pd
 
 
 class TidalHeightStats:
@@ -141,7 +140,9 @@ class TidalHeightStats:
         Gives a 100(1-alpha)% confidence interval for the slope
         '''
         mod = self.model
+        mod_mean = np.mean(mod)
         obs = self.observed
+        obs_mean = np.mean(obs)
         n = mod.size
         df = n - 2
 
@@ -154,7 +155,7 @@ class TidalHeightStats:
 
         # estimate parameters
         slope = SSxy / SSxx
-        intercept = np.mean(obs) - slope * np.mean(mod)
+        intercept = obs_mean - slope * mod_mean
         sd_slope = np.sqrt(MSE / SSxx)
         r_squared = 1 - SSE / SSyy
 
@@ -162,14 +163,27 @@ class TidalHeightStats:
         width = t.isf(0.5 * (1 - alpha), df) * sd_slope
         lower_bound = slope - width
         upper_bound = slope + width
+        slope_CI = (lower_bound, upper_bound)
+
+        # calculate 100(1 - alpha)% CI for intercept
+        lower_intercept = obs_mean - lower_bound * mod_mean
+        upper_intercept = obs_mean - upper_bound * mod_mean
+        intercept_CI = (lower_intercept, upper_intercept)
+
+        # estimate 100(1 - alpha)% CI for predictands
+        predictands = slope * mod + intercept
+        sd_resid = np.std(obs - predictands)
+        y_CI_width = t.isf(0.5 * (1 - alpha), df) * sd_resid * \
+            np.sqrt(1 - 1 / n)
 
         # return data in a dictionary
         data = {}
         data['slope'] = slope
         data['intercept'] = intercept
         data['r_2'] = r_squared
-        data['CI_lower'] = lower_bound
-        data['CI_upper'] = upper_bound
+        data['slope_CI'] = slope_CI
+        data['intercept_CI'] = intercept_CI
+        data['pred_CI_width'] = y_CI_width
         data['conf_level'] = 100 * (1 - alpha)
 
         return data
@@ -216,6 +230,45 @@ class TidalHeightStats:
         data['cross_pred'] = cross_pred
 
         return data
+
+    def plotRegression(self, lr):
+        '''
+        Plots a visualization of the output from linear regression,
+        including confidence intervals for predictands and slope.
+        '''
+        plt.scatter(self.model, self.observed, c='b', alpha=0.5)
+
+        # plot regression line, with CI's
+        mod_max = np.amax(self.model)
+        upper_intercept = lr['intercept'] + lr['pred_CI_width']
+        lower_intercept = lr['intercept'] - lr['pred_CI_width']
+
+        plt.plot([0, mod_max], [lr['intercept'], mod_max * lr['slope'] +
+                                lr['intercept']],
+                 color='k', linestyle='-', linewidth=2)
+
+        plt.plot([0, mod_max], [lr['intercept_CI'][0],
+                                mod_max * lr['slope_CI'][0] +
+                                lr['intercept_CI'][0]],
+                 color='r', linestyle='--', linewidth=2)
+
+        plt.plot([0, mod_max], [lr['intercept_CI'][1],
+                                mod_max * lr['slope_CI'][1] +
+                                lr['intercept_CI'][1]],
+                 color='r', linestyle='--', linewidth=2)
+
+        plt.plot([0, mod_max], [upper_intercept,
+                                mod_max * lr['slope'] + upper_intercept],
+                 color='g', linestyle='--', linewidth=2)
+
+        plt.plot([0, mod_max], [lower_intercept,
+                                mod_max * lr['slope'] + lower_intercept],
+                 color='g', linestyle='--', linewidth=2)
+
+        plt.xlabel('Modeled Data')
+        plt.ylabel('Observed Data')
+        plt.title('Modeled vs. Observed: Linear Fit')
+        plt.show()
 
     def plotData(self, graph='time'):
         '''
