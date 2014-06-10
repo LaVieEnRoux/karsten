@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import t
 import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
 
 
 class TidalHeightStats:
@@ -16,14 +17,15 @@ class TidalHeightStats:
     Functions are used to calculate statistics and to output
     visualizations and tables.
     '''
-    def __init__(self, model_data, model_step, observed_data, observed_step):
+    def __init__(self, model_data, model_step, observed_data, observed_step,
+                 start_time):
         # find gcd between the time steps using euclidean algorithm
         a = model_step
         gcd = observed_step
         while a:
             a, gcd = a % gcd, a
 
-        # calculate lcm from gcd, and solve: step * x = lcm
+        # calculate lcm from gcd, and solve: step * coef = lcm
         lcm = model_step * observed_step / gcd
         mod_coef = lcm / model_step
         obs_coef = lcm / observed_step
@@ -31,7 +33,13 @@ class TidalHeightStats:
         # slice data as necessary so times line up
         self.model = model_data[::mod_coef]
         self.observed = observed_data[::obs_coef]
-        self.error = model_data - observed_data
+        self.error = self.model - self.observed
+
+        # set up array of datetimes corresponding to the data
+        format = '%Y-%m-%d %H:%M:%S.%f'
+        start = datetime.strptime(start_time, format)
+        step = timedelta(minutes=lcm)
+        self.time = start + np.arange(self.model.size) * step
 
     # establish limits as defined by NOAA standard
     CF_MIN = 90
@@ -171,7 +179,7 @@ class TidalHeightStats:
         r_squared = 1 - SSE / SSyy
 
         # calculate 100(1 - alpha)% CI for slope
-        width = t.isf(0.5 * (1 - alpha), df) * sd_slope
+        width = t.isf(0.5 * alpha, df) * sd_slope
         lower_bound = slope - width
         upper_bound = slope + width
         slope_CI = (lower_bound, upper_bound)
@@ -184,7 +192,7 @@ class TidalHeightStats:
         # estimate 100(1 - alpha)% CI for predictands
         predictands = slope * mod + intercept
         sd_resid = np.std(obs - predictands)
-        y_CI_width = t.isf(0.5 * (1 - alpha), df) * sd_resid * \
+        y_CI_width = t.isf(0.5 * alpha, df) * sd_resid * \
             np.sqrt(1 - 1 / n)
 
         # return data in a dictionary
@@ -281,7 +289,7 @@ class TidalHeightStats:
         plt.title('Modeled vs. Observed: Linear Fit')
         plt.show()
 
-    def plotData(self, time, graph='time'):
+    def plotData(self, graph='time'):
         '''
         Provides a visualization of the data.
 
@@ -290,8 +298,8 @@ class TidalHeightStats:
         scatter : plots the model data vs. observed data
         '''
         if (graph == 'time'):
-            plt.plot(time, self.model, label='Model Predictions')
-            plt.plot(time, self.observed, colour='r',
+            plt.plot(self.time, self.model, label='Model Predictions')
+            plt.plot(self.time, self.observed, colour='r',
                      label='Observed Data')
             plt.xlabel('Time')
             plt.ylabel('Tidal Height')
