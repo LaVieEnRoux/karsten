@@ -11,35 +11,22 @@ class TidalHeightStats:
     Standards are from NOAA's Standard Suite of Statistics.
 
     Instantiated with two arrays containing predicted and observed
-    data, and the times corresponding to the data points. Begins by
-    interpolating timesteps between the datasets so they line up.
+    data which have already been interpolated so they line up, the
+    time step between points, and the start time of the data.
 
     Functions are used to calculate statistics and to output
     visualizations and tables.
     '''
-    def __init__(self, model_data, model_step, observed_data, observed_step,
-                 start_time):
-        # find gcd between the time steps using euclidean algorithm
-        a = model_step
-        gcd = observed_step
-        while a:
-            a, gcd = a % gcd, a
-
-        # calculate lcm from gcd, and solve: step * coef = lcm
-        lcm = model_step * observed_step / gcd
-        mod_coef = lcm / model_step
-        obs_coef = lcm / observed_step
-
-        # slice data as necessary so times line up
-        self.model = model_data[::mod_coef]
-        self.observed = observed_data[::obs_coef]
-        self.error = self.model - self.observed
+    def __init__(self, model_data, observed_data, time_step, start_time):
+        self.model = model_data
+        self.observed = observed_data
+        self.error = model_data - observed_data
 
         # set up array of datetimes corresponding to the data
         format = '%Y-%m-%d %H:%M:%S.%f'
         start = datetime.strptime(start_time, format)
-        step = timedelta(minutes=lcm)
-        self.time = start + np.arange(self.model.size) * step
+        step = timedelta(minutes=time_step)
+        self.times = start + np.arange(model_data.size) * step
 
     # establish limits as defined by NOAA standard
     CF_MIN = 90
