@@ -13,7 +13,7 @@ def interpol(data_1, data_2, time_step=timedelta(minutes=10)):
     values:
     start-  datetime object representing start of data
     end-    datetime object representing end of data
-    step- timedelta object representing time between data points
+    step-   timedelta object representing time between data points
     pts-    1D numpy array containing the data
 
     Third optional argument sets the time between data points in the output

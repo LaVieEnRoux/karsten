@@ -244,29 +244,28 @@ class TidalHeightStats:
         '''
         plt.scatter(self.model, self.observed, c='b', alpha=0.5)
 
-        # plot regression line, with CI's
+        # plot regression line
         mod_max = np.amax(self.model)
         upper_intercept = lr['intercept'] + lr['pred_CI_width']
         lower_intercept = lr['intercept'] - lr['pred_CI_width']
-
         plt.plot([0, mod_max], [lr['intercept'], mod_max * lr['slope'] +
                                 lr['intercept']],
                  color='k', linestyle='-', linewidth=2)
 
+        # plot CI's for slope
         plt.plot([0, mod_max], [lr['intercept_CI'][0],
                                 mod_max * lr['slope_CI'][0] +
                                 lr['intercept_CI'][0]],
                  color='r', linestyle='--', linewidth=2)
-
         plt.plot([0, mod_max], [lr['intercept_CI'][1],
                                 mod_max * lr['slope_CI'][1] +
                                 lr['intercept_CI'][1]],
                  color='r', linestyle='--', linewidth=2)
 
+        # plot CI's for predictands
         plt.plot([0, mod_max], [upper_intercept,
                                 mod_max * lr['slope'] + upper_intercept],
                  color='g', linestyle='--', linewidth=2)
-
         plt.plot([0, mod_max], [lower_intercept,
                                 mod_max * lr['slope'] + lower_intercept],
                  color='g', linestyle='--', linewidth=2)
