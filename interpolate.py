@@ -20,34 +20,37 @@ def interpol(data_1, data_2, time_step=timedelta(minutes=10)):
     data. Is a timedelta object, defaults to 10 minutes.
     '''
 
+    print data_1['start'], data_1['end']
+    print data_2['start'], data_2['end']
+
     # create POSIX timestamp array corresponding to each dataset
     times_1 = data_1['start'] + np.arange(data_1['pts'].size) * data_1['step']
     times_2 = data_2['start'] + np.arange(data_2['pts'].size) * data_2['step']
     for i in np.arange(times_1.size):
-        times_1 = time.mktime(times_1[i].timetuple())
-        times_2 = time.mktime(times_2[i].timetuple())
+        times_1[i] = time.mktime(times_1[i].timetuple())
+    for i in np.arange(times_2.size):
+        times_2[i] = time.mktime(times_2[i].timetuple())
 
     # generate interpolation functions using linear interpolation
-    f1 = interp1d(times_1, data_1['data'])
-    f2 = interp1d(times_2, data_2['data'])
+    f1 = interp1d(times_1, data_1['pts'])
+    f2 = interp1d(times_2, data_2['pts'])
 
     # choose interval on which to interpolate
     start = max(data_1['start'], data_2['start'])
-    end = min(data_2['end'], data_2['end'])
+    end = min(data_1['end'], data_2['end'])
     length = end - start
 
     # determine number of steps in the interpolation interval
-    steps = 0
-    while length > time_step:
-        length -= time_step
-        steps += 1
+    length_sec = length.total_seconds()
+    step_sec = time_step.total_seconds()
+    steps = int(length_sec / step_sec)
 
     # create POSIX timestamp array for new data and perform interpolation
     output_times = start + np.arange(steps) * time_step
     for i in np.arange(steps):
-        output_times = time.mktime(output_times[i].timetuple())
+        output_times[i] = time.mktime(output_times[i].timetuple())
 
     series_1 = f1(output_times)
     series_2 = f2(output_times)
 
-    return (series_1, series_2)
+    return (series_1, series_2, time_step, start)

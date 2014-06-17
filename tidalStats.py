@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 
-class TidalHeightStats:
+class TidalStats:
     '''
     An object representing a set of statistics on tidal heights used
     to determine the skill of a model in comparison to observed data.
@@ -23,10 +23,7 @@ class TidalHeightStats:
         self.error = model_data - observed_data
 
         # set up array of datetimes corresponding to the data
-        format = '%Y-%m-%d %H:%M:%S.%f'
-        start = datetime.strptime(start_time, format)
-        step = timedelta(minutes=time_step)
-        self.times = start + np.arange(model_data.size) * step
+        self.times = start_time + np.arange(model_data.size) * time_step
 
     # establish limits as defined by NOAA standard
     CF_MIN = 90
@@ -284,8 +281,8 @@ class TidalHeightStats:
         scatter : plots the model data vs. observed data
         '''
         if (graph == 'time'):
-            plt.plot(self.time, self.model, label='Model Predictions')
-            plt.plot(self.time, self.observed, colour='r',
+            plt.plot(self.times, self.model, label='Model Predictions')
+            plt.plot(self.times, self.observed, color='r',
                      label='Observed Data')
             plt.xlabel('Time')
             plt.ylabel('Tidal Height')

@@ -4,6 +4,64 @@ import pandas as pd
 import netCDF4 as nc
 from datetime import datetime, timedelta
 import pickle
+from ut_solv import ut_solv
+from ut_reconstr import ut_reconstr
+
+def ncdatasort(x, y, time, trinodes, lon=None, lat=None):
+
+    # Note, when time is passes, it is passed as
+    # time*24*3600.
+    # Does this need to be done this way?
+
+    hour = 3600
+    g = 9.806
+    TP = 12.42
+    rho = 1026
+    period = (TP*3600)/(2*np.pi)
+
+    # time=double(time)
+    time = time+678942
+
+    dt = time[1] - time[0]
+    thour = time/hour
+    deltat = thour[1]-thour[0]
+
+    size = x.shape[0]
+    nodexy = np.zeros((size, 2))
+    nodexy[:, 0] = x
+    nodexy[:, 1] = y
+    nodexy = np.array((x, y)).T
+
+    trinodes = trinodes.T-1
+    triSize = trinodes.shape[0]
+    uvnodexy = np.zeros((triSize, 2))
+
+    uvnodexy[:, 0] = (nodexy[trinodes[:, 0], 0] + nodexy[trinodes[:, 1], 0] +
+                      nodexy[trinodes[:, 2], 0]) / 3
+
+    uvnodexy[:, 1] = (nodexy[trinodes[:, 0], 1] + nodexy[trinodes[:, 1], 1] +
+                      nodexy[trinodes[:, 2], 1]) / 3
+
+    if lat != None and lon != None:
+        nodell = np.array((lon, lat)).T
+
+        uvnodell = np.zeros((triSize, 2))
+
+        uvnodell[:, 0] = (nodell[trinodes[:, 0], 0] +
+                          nodell[trinodes[:, 1], 0] +
+                          nodell[trinodes[:, 2], 0]) / 3
+
+        uvnodell[:, 1] = (nodell[trinodes[:, 0], 1] +
+                          nodell[trinodes[:, 1], 1] +
+                          nodell[trinodes[:, 2], 1]) / 3
+
+    else:
+        'No nodell, uvnodell set to uvnodexy'
+        uvnodell = uvnodexy
+
+    return (nodexy, uvnodexy, dt, deltat, hour, thour,
+            TP, rho, g, period, nodell, uvnodell, trinodes)
+
 
 
 def mjd2num(x):
@@ -43,28 +101,27 @@ def getData():
     filename = '/home/abalzer/standard_run_directory/0.0015/output/dngrid_0001.nc'
     
     data = nc.Dataset(filename, 'r')
-    #x = data.variables['x'][:]
-    #y = data.variables['y'][:]
+    x = data.variables['x'][:]
+    y = data.variables['y'][:]
     lon = data.variables['lon'][:]
     lat = data.variables['lat'][:]
     ua = data.variables['ua']
     va = data.variables['va']
     time = data.variables['time'][:]
-    #trinodes = data.variables['nv'][:]
+    trinodes = data.variables['nv'][:]
     #h = data.variables['zeta'][:]
     
-    #(nodexy, uvnodexy, dt, deltat,
-    # hour, thour, TP, rho, g, period,
-    # nodell, uvnodell, trinodes) = ncdatasort(x, y, time*24*3600,
-    #                                          trinodes, lon, lat)
+    (nodexy, uvnodexy, dt, deltat,
+     hour, thour, TP, rho, g, period,
+     nodell, uvnodell, trinodes) = ncdatasort(x, y, time*24*3600,
+                                              trinodes, lon, lat)
     
     time = mjd2num(time)
     
-    #Rayleigh = np.array([1])
+    Rayleigh = np.array([1])
     
     # adcpFilename = '/home/wesley/github/karsten/adcp/dngrid_adcp_2012.txt'
     # adcpFilename = '/home/wesley/github/karsten/adcp/testADCP.txt'
-    
     adcpFilename = '/home/wesleyb/github/karsten/adcp/dngrid_adcp_2012.txt'
     adcp = pd.read_csv(adcpFilename)
     
@@ -90,8 +147,8 @@ def getData():
     
     fvc_out_u, fvc_out_v = np.zeros([index.size, ua[:, 0].size]), \
     		       np.zeros([index.size, ua[:, 0].size])
-    adcp_start, adcp_end = [], []
- 
+    adcp_start, adcp_end, adcp_step = [], [], []
+
     # main loop, loads in data
     for i, ii in enumerate(index):
     
@@ -104,6 +161,7 @@ def getData():
     	    adcp_out_v[i] = ADCP['v'].values
     	    adcp_start.append(ADCP.index[0].to_datetime())
 	    adcp_end.append(ADCP.index[-1].to_datetime())
+	    adcp_step.append(ADCP.index[1].to_datetime() - adcp_start[i])
 
     	    fvc_out_u[i] = ua[:, ii]
     	    fvc_out_v[i] = va[:, ii]
@@ -124,20 +182,17 @@ def getData():
 	      timedelta(days=(f_start%1)) - timedelta(days=366)
     f_end = datetime.fromordinal(int(f_end)) + timedelta(days=(f_end%1)) - \
 	    timedelta(days=366)
-    f_step = f_end - f_start
+    f_step = datetime.fromordinal(int(time[1])) + \
+	     timedelta(days=(time[1]%1)) - timedelta(days=366) - f_start
 
     # put together dictionaries, ready for interpolation/smoothing
     adcp_dicts = []
     fvc_dicts = []
     for i in np.arange(len(adcp_start)):
-
-	print 'Beginning loading into dictionaries'
-	print i
-
 	adcp = {}
 	adcp['start'] = adcp_start[i]
 	adcp['end'] = adcp_end[i]
-	adcp['step'] = adcp_end[i] - adcp_start[i]
+	adcp['step'] = adcp_step[i]
 	adcp['pts'] = np.sqrt(adcp_out_u[i]**2 + adcp_out_v[i]**2)
 	adcp_dicts.append(adcp)
 
@@ -153,16 +208,42 @@ def getData():
     out_adcp = open(filename_1, 'wb')
     pickle.dump(adcp_dicts, out_adcp)
 
-    print 'File 1 created!'
-
     filename_2 = '/home/jonsmith/tidal_data/stats_test/FVCOM_data1.pkl'
     out_fvc = open(filename_2, 'wb')
     pickle.dump(fvc_dicts, out_fvc)
 
-    print 'File 2 created!'
-
     out_adcp.close()
     out_fvc.close()
 
+    # start getting the harmonic data
+    new_series = []
+    for i in np.arange(len(fvc_dicts)):
+        order = ['M2','S2','N2','K2','K1','O1','P1','Q1']
+    
+        coef = ut_solv(time, ua[:, ii], va[:, ii], uvnodell[ii, 1],
+                        cnstit=order, Rayleigh=1, notrend=True, method='ols',
+                        nodiagn=True, linci=True, conf_int=False,
+                        ordercnstit='frq')
+    	    
+	# create time array for output time series
+	start = adcp_dicts[i]['start']
+	step = adcp_dicts[i]['step']
+	num_steps = adcp_dicts[i]['pts'].size
+
+	series = start + np.arange(num_steps) * step
+	for i, ii in enumerate(series):
+	    series[i] = datetime2matlabdn(ii)
+    
+	# reconstruct the time series using adcp times
+	time_series = ut_reconstr(series, coef)
+	new_series.append(time_series)
+	
+    # save harmonic data    
+    filename_3 = '/home/jonsmith/tidal_data/stats_test/hindcast_1.pkl'
+    out_hind = open(filename_3, 'wb')
+    pickle.dump(new_series, out_hind)
+    out_hind.close()
+
     print 'Done!'
 
+getData()
