@@ -5,7 +5,7 @@ import netCDF4 as nc
 from datetime import datetime, timedelta
 import pickle
 import sys
-sys.path.append('/home/jonsmith/github/UTide/')
+sys.path.append('/array/home/116822s/github/UTide/')
 from utide import ut_solv, ut_reconstr
 
 def ncdatasort(x, y, time, trinodes, lon=None, lat=None):
@@ -99,8 +99,9 @@ def getData():
     # filename = '/home/wesley/github/aidan-projects/grid/dngrid_0001.nc'
     # filename = '/home/abalzer/scratch/standard_run_directory/0.0015/output/dngrid_0001.nc'
     # filename = '/home/wesley/ncfiles/smallcape_force_0001.nc'
-    filename = '/home/abalzer/standard_run_directory/0.0015/output/dngrid_0001.nc'
-    
+    # filename = '/home/abalzer/standard_run_directory/0.0015/output/dngrid_0001.nc'
+    filename = '/array/data1/rkarsten/dncoarse_bctest/output/dn_coarse_0001.nc'
+
     data = nc.Dataset(filename, 'r')
     x = data.variables['x'][:]
     y = data.variables['y'][:]
@@ -123,7 +124,8 @@ def getData():
     
     # adcpFilename = '/home/wesley/github/karsten/adcp/dngrid_adcp_2012.txt'
     # adcpFilename = '/home/wesley/github/karsten/adcp/testADCP.txt'
-    adcpFilename = '/home/wesleyb/github/karsten/adcp/dngrid_adcp_2012.txt'
+    # adcpFilename = '/home/wesleyb/github/karsten/adcp/dngrid_adcp_2012.txt'
+    adcpFilename = '/array/home/116822s/github/karsten/acadia_dngrid_adcp_2012.txt'
     adcp = pd.read_csv(adcpFilename)
     
     lonlat = np.array([adcp['Longitude'], adcp['Latitude']]).T
@@ -205,18 +207,16 @@ def getData():
 	fvc_dicts.append(fvc)
 
     # load data into file using pickle
-    filename_1 = '/home/jonsmith/tidal_data/stats_test/ADCP_data1.pkl'
+    filename_1 = '/array/home/116822s/tidal_data/stats_test/ADCP_data1.pkl'
     out_adcp = open(filename_1, 'wb')
     pickle.dump(adcp_dicts, out_adcp)
 
-    filename_2 = '/home/jonsmith/tidal_data/stats_test/FVCOM_data1.pkl'
+    filename_2 = '/array/home/116822s/tidal_data/stats_test/FVCOM_data1.pkl'
     out_fvc = open(filename_2, 'wb')
     pickle.dump(fvc_dicts, out_fvc)
 
     out_adcp.close()
     out_fvc.close()
-
-    
 
     # start getting the harmonic data
     for i in np.arange(len(fvc_dicts)):
@@ -225,7 +225,7 @@ def getData():
 	print 'Getting harmonic data for new site'
 
         coef = ut_solv(time, ua[:, ii], va[:, ii], uvnodell[ii, 1],
-                        cnstit=order, Rayleigh=1, notrend=True, method='ols',
+                        cnstit=order, rmin=Rayleigh[0], notrend=True, method='ols',
                         nodiagn=True, linci=True, conf_int=True,
                         ordercnstit='frq')
     	    
@@ -235,13 +235,17 @@ def getData():
 	num_steps = adcp_dicts[i]['pts'].size
 
 	series = start + np.arange(num_steps) * step
-	for i, ii in enumerate(series):
-	    series[i] = datetime2matlabdn(ii)
+	for v, vv in enumerate(series):
+	    series[v] = datetime2matlabdn(vv)
    
 	t = series.astype(float)
+
+	print t.size, series.size, num_steps
  
 	# reconstruct the time series using adcp times
-	time_series = ut_reconstr(t, coef)
+	time_series = np.asarray(ut_reconstr(t, coef)[0])
+
+	print time_series
 
 	fvc_dicts[i]['start'] = start
 	fvc_dicts[i]['end'] = adcp_dicts[i]['end']
@@ -249,7 +253,7 @@ def getData():
 	fvc_dicts[i]['pts'] = time_series
 	
     # save harmonic data    
-    filename_3 = '/home/jonsmith/tidal_data/stats_test/hindcast_1.pkl'
+    filename_3 = '/array/home/116822s/tidal_data/stats_test/hindcast_1.pkl'
     out_hind = open(filename_3, 'wb')
     pickle.dump(fvc_dicts, out_hind)
     out_hind.close()

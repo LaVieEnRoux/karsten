@@ -18,8 +18,8 @@ class TidalStats:
     visualizations and tables.
     '''
     def __init__(self, model_data, observed_data, time_step, start_time):
-        self.model = model_data
-        self.observed = observed_data
+        self.model = model_data.astype(np.float64)
+        self.observed = observed_data.astype(np.float64)
         self.error = model_data - observed_data
 
         # set up array of datetimes corresponding to the data
