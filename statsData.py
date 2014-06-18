@@ -4,8 +4,9 @@ import pandas as pd
 import netCDF4 as nc
 from datetime import datetime, timedelta
 import pickle
-from ut_solv import ut_solv
-from ut_reconstr import ut_reconstr
+import sys
+sys.path.append('/home/jonsmith/github/UTide/')
+from utide import ut_solv, ut_reconstr
 
 def ncdatasort(x, y, time, trinodes, lon=None, lat=None):
 
@@ -215,14 +216,17 @@ def getData():
     out_adcp.close()
     out_fvc.close()
 
+    
+
     # start getting the harmonic data
-    new_series = []
     for i in np.arange(len(fvc_dicts)):
         order = ['M2','S2','N2','K2','K1','O1','P1','Q1']
-    
+        
+	print 'Getting harmonic data for new site'
+
         coef = ut_solv(time, ua[:, ii], va[:, ii], uvnodell[ii, 1],
                         cnstit=order, Rayleigh=1, notrend=True, method='ols',
-                        nodiagn=True, linci=True, conf_int=False,
+                        nodiagn=True, linci=True, conf_int=True,
                         ordercnstit='frq')
     	    
 	# create time array for output time series
@@ -233,15 +237,21 @@ def getData():
 	series = start + np.arange(num_steps) * step
 	for i, ii in enumerate(series):
 	    series[i] = datetime2matlabdn(ii)
-    
+   
+	t = series.astype(float)
+ 
 	# reconstruct the time series using adcp times
-	time_series = ut_reconstr(series, coef)
-	new_series.append(time_series)
+	time_series = ut_reconstr(t, coef)
+
+	fvc_dicts[i]['start'] = start
+	fvc_dicts[i]['end'] = adcp_dicts[i]['end']
+	fvc_dicts[i]['step'] = step
+	fvc_dicts[i]['pts'] = time_series
 	
     # save harmonic data    
     filename_3 = '/home/jonsmith/tidal_data/stats_test/hindcast_1.pkl'
     out_hind = open(filename_3, 'wb')
-    pickle.dump(new_series, out_hind)
+    pickle.dump(fvc_dicts, out_hind)
     out_hind.close()
 
     print 'Done!'
