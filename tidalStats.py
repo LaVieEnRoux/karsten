@@ -24,6 +24,7 @@ class TidalStats:
 
         # set up array of datetimes corresponding to the data
         self.times = start_time + np.arange(model_data.size) * time_step
+        self.step = time_step
 
     # establish limits as defined by NOAA standard
     CF_MIN = 90
@@ -79,7 +80,7 @@ class TidalStats:
 
         return (lower_num / total) * 100
 
-    def getMDPO(self, timestep):
+    def getMDPO(self):
         '''
         Returns the maximum duration of positive outliers, i.e. the
         longest amount of time across the data where the model data
@@ -88,6 +89,8 @@ class TidalStats:
         Takes one parameter: the number of minutes between consecutive
         data points.
         '''
+        timestep = self.step.seconds / 60
+
         max_duration = 0
         current_duration = 0
         for i in np.arange(self.error.size):
@@ -100,7 +103,7 @@ class TidalStats:
 
         return max_duration
 
-    def getMDNO(self, timestep):
+    def getMDNO(self):
         '''
         Returns the maximum duration of negative outliers, i.e. the
         longest amount of time across the data where the observed
@@ -109,6 +112,8 @@ class TidalStats:
         Takes one parameter: the number of minutes between consecutive
         data points.
         '''
+        timestep = self.step.seconds / 60
+
         max_duration = 0
         current_duration = 0
         for i in np.arange(self.error.size):
@@ -121,18 +126,35 @@ class TidalStats:
 
         return max_duration
 
-    def getStats(self, timestep):
+    def getWillmott(self):
+        '''
+        Returns the Willmott skill statistic.
+        '''
+
+        # start by calculating MSE
+        MSE = np.mean(self.error**2)
+
+        # now calculate the rest of it
+        obs_mean = np.mean(self.observed)
+        skill = 1 - MSE / np.mean((abs(self.model - obs_mean) +
+                                   abs(self.observed - obs_mean))**2)
+
+        return skill
+
+    def getStats(self):
         '''
         Returns each of the statistics in a dictionary.
         '''
+
         stats = {}
         stats['RMSE'] = self.getRMSE()
         stats['CF'] = self.getCF()
         stats['SD'] = self.getSD()
         stats['POF'] = self.getPOF()
         stats['NOF'] = self.getNOF()
-        stats['MDPO'] = self.getMDPO(timestep)
-        stats['MDNO'] = self.getMDNO(timestep)
+        stats['MDPO'] = self.getMDPO()
+        stats['MDNO'] = self.getMDNO()
+        stats['skill'] = self.getWillmott()
 
         return stats
 
@@ -209,7 +231,7 @@ class TidalStats:
             train_mod = np.delete(model_orig, i)
             train_obs = np.delete(obs_orig, i)
             train_time = np.delete(time_orig, i)
-            train_stats = TidalHeightStats(train_mod, train_obs, train_time)
+            train_stats = TidalStats(train_mod, train_obs, train_time)
 
             # redo the linear regression and get parameters
             param = train_stats.linReg(alpha)
