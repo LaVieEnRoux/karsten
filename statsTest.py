@@ -1,8 +1,8 @@
 #import numpy as np
 from datetime import datetime, timedelta
 import pickle
-import interpolate
-#import smooth
+#import interpolate
+import smooth
 from tidalStats import TidalStats
 import matplotlib.pyplot as plt
 
@@ -28,11 +28,19 @@ hind = pickle.load(hind_f)
 #plt.show()
 
 # first test
+<<<<<<< HEAD
 print zip(ADCP[0]['pts'][:20], hind[0]['pts'][:20], FVCOM[0]['pts'][:20])
 (ADCP_i, FVCOM_i, step, start) = interpolate.interpol(ADCP[0], hind[0], timedelta(minutes=20))
+=======
+(ADCP_i, FVCOM_i, step, start) = smooth.smooth(ADCP[7], hind[7])
+>>>>>>> f8e09cfcde35438bec7999d2e9139a0c6de6c924
 
 speed_stats = TidalStats(ADCP_i, FVCOM_i, step, start)
-#lr = speed_stats.linReg()
-#speed_stats.plotRegression(lr)
+lr = speed_stats.linReg()
+speed_stats.plotRegression(lr)
 
+<<<<<<< HEAD
 #speed_stats.plotData(graph='scatter')
+=======
+#speed_stats.plotData()
+>>>>>>> f8e09cfcde35438bec7999d2e9139a0c6de6c924
