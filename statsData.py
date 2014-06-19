@@ -243,7 +243,9 @@ def getData():
 	print t.size, series.size, num_steps
  
 	# reconstruct the time series using adcp times
-	time_series = np.asarray(ut_reconstr(t, coef)[0])
+	time_series = np.asarray(ut_reconstr(t, coef))
+	time_series = np.sqrt(time_series[0]**2 + time_series[1]**2)
+	# ASK WESLEY WHAT THIS RETURNS, my idea might not be correct
 
 	print time_series
 
