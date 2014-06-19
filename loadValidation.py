@@ -21,10 +21,11 @@ def loadValidation():
     struct_f = open(filename, 'rb')
     struct = pickle.load(struct_f)
 
-    print struct[0].items()
+    # iterate through the sites in the struct
+    #for site in struct:
+	 
+    time_series = ut_reconstr(struct[6]['obs_time'], struct[6]['speed_mod_harmonics'])
 
-    series = ut_reconstr(struct[5]['obs_time'], struct[5]['speed_obs_harmonics'])
-
-    plt.plot(struct[5]['obs_time'], series[0])
+    print time_series
 
 loadValidation()
