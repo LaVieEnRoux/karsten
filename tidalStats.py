@@ -38,47 +38,46 @@ class TidalStats:
         '''
         Returns the root mean squared error of the data.
         '''
-        n = self.error.size
-        return np.sqrt(np.sum(self.error**2) / n)
+        return np.sqrt(np.mean(self.error**2))
 
     def getSD(self):
         '''
         Returns the standard deviation of the error.
         '''
-        return np.sqrt((abs(self.error - self.error.mean())**2).mean)
+        return np.sqrt(np.mean(abs(self.error - np.mean(self.error)**2)))
 
     def getCF(self):
         '''
         Returns the central frequency of the data, i.e. the fraction of
         errors that lie within the defined limit.
         '''
-        central_err = np.where(self.error < self.ERROR_BOUND)
-        central_num = central_err[0].size
+        central_err = [i for i in self.error if i < self.ERROR_BOUND]
+        central_num = len(central_err)
         total = self.error.size
 
-        return (central_num / total) * 100
+        return (float(central_num) / float(total)) * 100
 
     def getPOF(self):
         '''
         Returns the positive outlier frequency of the data, i.e. the
         fraction of errors that lie above the defined limit.
         '''
-        upper_err = np.where(self.error > 2 * self.ERROR_BOUND)
-        upper_num = upper_err[0].size
+        upper_err = [i for i in self.error if i > 2 * self.ERROR_BOUND]
+        upper_num = len(upper_err)
         total = self.error.size
 
-        return (upper_num / total) * 100
+        return (float(upper_num) / float(total)) * 100
 
     def getNOF(self):
         '''
         Returns the negative outlier frequency of the data, i.e. the
         fraction of errors that lie below the defined limit.
         '''
-        lower_err = np.where(self.error < -2 * self.ERROR_BOUND)
-        lower_num = lower_err[0].size
+        lower_err = [i for i in self.error if i < -2 * self.ERROR_BOUND]
+        lower_num = len(lower_err)
         total = self.error.size
 
-        return (lower_num / total) * 100
+        return (float(lower_num) / float(total)) * 100
 
     def getMDPO(self):
         '''
@@ -94,7 +93,7 @@ class TidalStats:
         max_duration = 0
         current_duration = 0
         for i in np.arange(self.error.size):
-            if (self.error > self.ERROR_BOUND):
+            if (self.error[i] > self.ERROR_BOUND):
                 current_duration += timestep
             else:
                 if (current_duration > max_duration):
@@ -117,7 +116,7 @@ class TidalStats:
         max_duration = 0
         current_duration = 0
         for i in np.arange(self.error.size):
-            if (self.error < -self.ERROR_BOUND):
+            if (self.error[i] < -self.ERROR_BOUND):
                 current_duration += timestep
             else:
                 if (current_duration > max_duration):
@@ -292,7 +291,12 @@ class TidalStats:
         plt.xlabel('Modeled Data')
         plt.ylabel('Observed Data')
         plt.title('Modeled vs. Observed: Linear Fit')
-        plt.show()
+
+	r_string = 'R Squared: {}'.format(lr['r_2'])
+	plt.text(mod_max - 2, 0, r_string)
+	plt.show()
+
+	plt.savefig('/array/home/rkarsten/common_tidal_files/python/jonCode/regressionPlot.png')
 
     def plotData(self, graph='time'):
         '''
