@@ -163,11 +163,12 @@ class TidalStats:
 
         Gives a 100(1-alpha)% confidence interval for the slope
         '''
-        mod = self.model
-        mod_mean = np.mean(mod)
-        obs = self.observed
+	# get rid of those friggin NaNs
+	obs = self.observed[np.where(~np.isnan(self.observed))[0]]
+	mod = self.model[np.where(~np.isnan(self.observed))[0]]
         obs_mean = np.mean(obs)
-        n = mod.size
+	mod_mean = np.mean(mod)
+	n = mod.size
         df = n - 2
 
         # calculate square sums
@@ -176,6 +177,10 @@ class TidalStats:
         SSxy = np.sum(mod * obs) - np.sum(mod) * np.sum(obs) / n
         SSE = SSyy - SSxy**2 / SSxx
         MSE = SSE / df
+
+	print mod[:20]
+	print 'Sum of squares: {0}, Square sum: {1}'.format(np.sum(mod**2), 
+							    np.sum(mod)**2 / n)
 
         # estimate parameters
         slope = SSxy / SSxx
@@ -294,7 +299,7 @@ class TidalStats:
 
 	r_string = 'R Squared: {}'.format(lr['r_2'])
 	plt.text(mod_max - 2, 0, r_string)
-	plt.show()
+	#plt.show()
 
 	plt.savefig('/array/home/rkarsten/common_tidal_files/python/jonCode/regressionPlot.png')
 

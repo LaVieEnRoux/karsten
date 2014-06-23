@@ -1,9 +1,9 @@
 import numpy as np
-import interpolate
 import cPickle as pickle
 from tidalStats import TidalStats
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+from compareData import compareData
 import sys
 sys.path.append('/array/home/116822s/github/UTide/')
 from utide import ut_reconstr
@@ -26,9 +26,19 @@ def loadValidation():
     struct_f = open(filename, 'rb')
     struct = pickle.load(struct_f)
 
-    # iterate through the sites in the struct
-    #for site in struct:
 
+    # iterate through the sites in the struct, get stats
+    for site in struct:
+	(speed_suite, dir_suite) = compareData(site)
+	site['speed_val'] = speed_suite
+	site['dir_val'] = dir_suite
+	
+	print 'R Squared: {}'.format(speed_suite['r_squared'])
+
+    filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
+    out_f = open(filename_out, 'wb')
+    pickle.dump(struct, out_f)
+'''
     time_series = ut_reconstr(struct[6]['obs_time'], 
 			      struct[6]['speed_mod_harmonics'])
 
@@ -54,5 +64,6 @@ def loadValidation():
     print lr['r_2'], lr['slope']
     #test_stats.plotData()
     #print test_stats.getStats()
+'''
 
 loadValidation()
