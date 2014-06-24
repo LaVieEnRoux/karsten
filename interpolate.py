@@ -30,8 +30,6 @@ def interpol(data_1, data_2, time_step=timedelta(minutes=10)):
 
     # generate interpolation functions using linear interpolation
     f1 = interp1d(times_1, data_1['pts'])
-
-    print times_2.shape, data_2['pts']
     f2 = interp1d(times_2, data_2['pts'])
 
     # choose interval on which to interpolate

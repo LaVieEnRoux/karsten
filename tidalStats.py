@@ -29,10 +29,6 @@ class TidalStats:
         self.step = time_step
 
     # establish limits as defined by NOAA standard
-    CF_MIN = 90
-    POF_MAX = 1
-    NOF_MAX = 1
-    WOF_MAX = 0.5
     MDO_MAX = 1440
     ERROR_BOUND = 0.015
 
@@ -40,7 +36,6 @@ class TidalStats:
         '''
         Returns the root mean squared error of the data.
         '''
-	print type(self.error[0])
         return np.sqrt(np.mean(self.error**2))
 
     def getSD(self):
@@ -98,6 +93,8 @@ class TidalStats:
         for i in np.arange(self.error.size):
             if (self.error[i] > self.ERROR_BOUND):
                 current_duration += timestep
+	    elif ((np.isnan(self.error[i])) and (current_duration != 0)):
+		current_duration += timestep
             else:
                 if (current_duration > max_duration):
                     max_duration = current_duration
@@ -121,6 +118,8 @@ class TidalStats:
         for i in np.arange(self.error.size):
             if (self.error[i] < -self.ERROR_BOUND):
                 current_duration += timestep
+	    elif ((np.isnan(self.error[i])) and (current_duration != 0)):
+		current_duration += timestep
             else:
                 if (current_duration > max_duration):
                     max_duration = current_duration
@@ -268,28 +267,31 @@ class TidalStats:
 
         # plot regression line
         mod_max = np.amax(self.model)
+	mod_min = np.amin(self.model)
         upper_intercept = lr['intercept'] + lr['pred_CI_width']
         lower_intercept = lr['intercept'] - lr['pred_CI_width']
-        plt.plot([0, mod_max], [lr['intercept'], mod_max * lr['slope'] +
-                                lr['intercept']],
+        plt.plot([mod_min, mod_max], [mod_min * lr['slope'] + lr['intercept'], 
+				      mod_max * lr['slope'] + lr['intercept']],
                  color='k', linestyle='-', linewidth=2)
 
         # plot CI's for slope
-        plt.plot([0, mod_max], [lr['intercept_CI'][0],
-                                mod_max * lr['slope_CI'][0] +
-                                lr['intercept_CI'][0]],
+        plt.plot([mod_min, mod_max], 
+		 [mod_min * lr['slope_CI'][0] + lr['intercept_CI'][0], 
+		  mod_max * lr['slope_CI'][0] + lr['intercept_CI'][0]],
                  color='r', linestyle='--', linewidth=2)
-        plt.plot([0, mod_max], [lr['intercept_CI'][1],
-                                mod_max * lr['slope_CI'][1] +
-                                lr['intercept_CI'][1]],
+        plt.plot([mod_min, mod_max], 
+		 [mod_min * lr['slope_CI'][1] + lr['intercept_CI'][1],
+                  mod_max * lr['slope_CI'][1] + lr['intercept_CI'][1]],
                  color='r', linestyle='--', linewidth=2)
 
         # plot CI's for predictands
-        plt.plot([0, mod_max], [upper_intercept,
-                                mod_max * lr['slope'] + upper_intercept],
+        plt.plot([mod_min, mod_max], 
+		 [mod_min * lr['slope'] + upper_intercept,
+                  mod_max * lr['slope'] + upper_intercept],
                  color='g', linestyle='--', linewidth=2)
-        plt.plot([0, mod_max], [lower_intercept,
-                                mod_max * lr['slope'] + lower_intercept],
+        plt.plot([mod_min, mod_max], 
+		 [mod_min * lr['slope'] + lower_intercept,
+                  mod_max * lr['slope'] + lower_intercept],
                  color='g', linestyle='--', linewidth=2)
 
         plt.xlabel('Modeled Data')

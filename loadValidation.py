@@ -28,20 +28,23 @@ def loadValidation():
     struct_f = open(filename, 'rb')
     struct = pickle.load(struct_f)
 
-    # iterate through the sites in the struct, get stats
-    for site in struct['dncoarse_bctest_old']:
+    # iterate through the runs in the struct
+    for run in struct:
 
-	# check if site is a tidegauge site
-	if (len(site.keys()) != NUM_TIDEGAUGE_KEYS):
-	    (speed_suite, dir_suite) = compareUV(site)
-	    site['speed_val'] = speed_suite
-	    site['dir_val'] = dir_suite
-	
-	else:
-	    elev_suite_dg = compareTG(site, 'dg')
-	    elev_suite_gp = compareTG(site, 'gp')
-	    site['dg_elev_val'] = elev_suite_dg
-	    site['gp_elev_val'] = elev_suite_gp
+        # iterate through the sites in the run
+        for site in run:
+    
+    	    # check if site is a tidegauge site
+    	    if (len(site.keys()) != NUM_TIDEGAUGE_KEYS):
+    	        (speed_suite, dir_suite) = compareUV(site)
+    	        site['speed_val'] = speed_suite
+    	        site['dir_val'] = dir_suite
+    	    
+    	    else:
+    	        elev_suite_dg = compareTG(site, 'dg')
+    	        elev_suite_gp = compareTG(site, 'gp')
+    	        site['dg_elev_val'] = elev_suite_dg
+    	        site['gp_elev_val'] = elev_suite_gp
 
     filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
     out_f = open(filename_out, 'wb')

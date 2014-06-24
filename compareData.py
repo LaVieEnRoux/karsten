@@ -157,4 +157,7 @@ def compareTG(data, site):
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
 
+    lr = stats.linReg()
+    stats.plotRegression(lr)
+
     return elev_suite
