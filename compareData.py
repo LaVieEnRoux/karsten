@@ -1,6 +1,7 @@
 import numpy as np
 from tidalStats import TidalStats
-import interpolate
+from interpolate import interpol
+from datetime import datetime, timedelta
 import sys
 sys.path.append('/array/home/116822s/github/UTide')
 from utide import ut_reconstr
@@ -25,23 +26,34 @@ def dn2dt(datenum):
     return datetime.fromordinal(int(datenum)) + timedelta(days=datenum%1) - \
            timedelta(days=366)
 
-def compareData(mod_el, obs_el, mod_u, obs_u, mod_v, obs_v, mod_harm,
-                obs_harm, mod_time, obs_time):
+def compareUV(data):
     '''
     Does a comprehensive validation process between modeled and observed
     data on the following:
-        Elevation
         Current speed
         Current direction
-        Harmonic constituents
+        Harmonic constituents (for height and speed)
 
     Outputs a list of important statistics for each variable, calculated
     using the TidalStats class
     '''
-
+    # take data from input dictionary
+    mod_time = data['mod_time']
+    obs_time = data['obs_time']
+    mod_u = data['mod_timeseries']['ua']
+    mod_v = data['mod_timeseries']['va']
+    obs_u = data['obs_timeseries']['u']
+    obs_v = data['obs_timeseries']['v']
+    mod_harm = data['speed_mod_harmonics']
+    obs_harm = data['speed_obs_harmonics']
+   
     # grab some important values
-    mod_step = mod_time[1] - mod_time[0]
-    obs_step = obs_time[1] - obs_time[0]
+    mod_start = dn2dt(mod_time[0])
+    mod_next = dn2dt(mod_time[1])
+    mod_step = mod_next - mod_start
+    obs_start = dn2dt(obs_time[0])
+    obs_next = dn2dt(obs_time[1])
+    obs_step = obs_next - obs_start
 
     # put u v velocities into a useful format
     mod_spd = np.sqrt(mod_u**2 + mod_v**2)
@@ -50,13 +62,9 @@ def compareData(mod_el, obs_el, mod_u, obs_u, mod_v, obs_v, mod_harm,
     obs_dir = np.arctan(obs_v / obs_u)
 
     # check if the modeled data lines up with the observed data
-    if (mod_time[-1] < obs_time[0] || obs_time[-1] < mod_time[0]):
-	# use ut_reconstr to create predicted data
-	reconstr_time = np.zeros(obs_time.size)
-	for i, v in enumerate(obs_time):
-	    reconstr_time[i] = dn2dt(v)
+    if (mod_time[-1] < obs_time[0] or obs_time[-1] < mod_time[0]):
 
-	pred_uv = ut_reconstr(reconstr_time, mod_harm)
+	pred_uv = ut_reconstr(obs_time, mod_harm)
 	pred_uv = np.asarray(pred_uv)
 
 	# redo speed and direction and set interpolated variables
@@ -65,41 +73,88 @@ def compareData(mod_el, obs_el, mod_u, obs_u, mod_v, obs_v, mod_harm,
 	obs_sp_int = obs_spd
 	obs_dr_int = obs_dir
 	step_int = obs_step
-	start_int = obs_time[0]
+	start_int = obs_start
 
     else:
         # interpolate the data onto a common time step for each data type
-        mod_el_d = loadDict(mod_el, mod_step, mod_time[0], mod_time[-1])
-        obs_el_d = loadDict(obs_el, obs_step, obs_time[0], obs_time[-1])
-        (mod_el_int, obs_el_int, step_int, start_int) = \
-            interpolate.interpol(mod_el_d, obs_el_d)
+#        mod_el_d = loadDict(mod_el, mod_step, mod_time[0], mod_time[-1])
+#        obs_el_d = loadDict(obs_el, obs_step, obs_time[0], obs_time[-1])
+#        (mod_el_int, obs_el_int, step_int, start_int) = \
+#            interpol(mod_el_d, obs_el_d)
 
-        mod_sp_d = loadDict(mod_spd, mod_step, mod_time[0], mod_time[-1])
-        obs_sp_d = loadDict(obs_spd, obs_step, obs_time[0], obs_time[-1])
+        mod_sp_d = loadDict(mod_spd, mod_step, mod_start, mod_time[-1])
+        obs_sp_d = loadDict(obs_spd, obs_step, obs_start, obs_time[-1])
         (mod_sp_int, obs_sp_int, step_int, start_int) = \
-            interpolate.interpol(mod_sp_d, obs_sp_d)
+            interpol(mod_sp_d, obs_sp_d)
 
-        mod_dr_d = loadDict(mod_dir, mod_step, mod_time[0], mod_time[-1])
-        obs_dr_d = loadDict(obs_dir, obs_step, obs_time[0], obs_time[-1])
+        mod_dr_d = loadDict(mod_dir, mod_step, mod_start, mod_time[-1])
+        obs_dr_d = loadDict(obs_dir, obs_step, obs_start, obs_time[-1])
         (mod_dr_int, obs_dr_int, step_int, start_int) = \
-            interpolate.interpol(mod_dr_d, obs_dr_d)
+            interpol(mod_dr_d, obs_dr_d)
 
     # set up the comparison classes for each type of data
-    elev_stats = TidalStats(mod_el_int, obs_el_int, step_int, start_int)
+#    elev_stats = TidalStats(mod_el_int, obs_el_int, step_int, start_int)
     speed_stats = TidalStats(mod_sp_int, obs_sp_int, step_int, start_int)
     dir_stats = TidalStats(mod_dr_int, obs_dr_int, step_int, start_int)
 
     # obtain necessary statistics
-    elev_suite = elev_stats.getStats()
+#    elev_suite = elev_stats.getStats()
     speed_suite = speed_stats.getStats()
     dir_suite = dir_stats.getStats()
 
     # do some linear regression
-    elev_suite['r_squared'] = elev_stats.linReg()['r_2']
+#    elev_suite['r_squared'] = elev_stats.linReg()['r_2']
     speed_suite['r_squared'] = speed_stats.linReg()['r_2']
     dir_suite['r_squared'] = dir_stats.linReg()['r_2']
 
     # do statistic on harmonic constituents as well
 
     # output statistics in useful format
-    return (elev_suite, speed_suite, dir_suite)
+#    return (elev_suite, speed_suite, dir_suite)
+    return (speed_suite, dir_suite)
+
+def compareTG(data, site):
+    '''
+    Does a comprehensive comparison between tide gauge height data and
+    modeled data, much like the above function.
+
+    Input is a dictionary containing all necessary tide gauge and model data.
+    Outputs a dictionary of useful statistics.
+    '''
+    # set up keys based on site input
+    el_key = 'el{}'.format(site)
+    dat_key = '{}_tg_data'.format(site)
+    time_key = '{}_time'.format(site)
+    obs_harm_key = '{}_tidegauge_harmonics'.format(site)
+    mod_harm_key = '{}_mod_harmonics'.format(site)
+
+    # load data
+    mod_elev = data[el_key]
+    obs_elev = data[dat_key]
+    obs_datenums = data[time_key]
+    mod_datenums = data['mod_time']
+    
+    # subtract mean from tidegauge stuff
+    obs_elev = obs_elev - np.mean(obs_elev)
+
+    # convert times and grab values
+    obs_time, mod_time = [], [] 
+    for i, v in enumerate(obs_datenums):
+	obs_time.append(dn2dt(v))
+    for j, w in enumerate(mod_datenums):
+	mod_time.append(dn2dt(w))
+    obs_step = obs_time[1] - obs_time[0]
+    mod_step = mod_time[1] - mod_time[0]
+
+    # interpolate timeseries onto a common timestep
+    obs_dict = loadDict(obs_elev, obs_step, obs_time[0], obs_time[-1])
+    mod_dict = loadDict(mod_elev, mod_step, mod_time[0], mod_time[-1])
+    (obs_elev_int, mod_elev_int, step_int, start_int) = \
+        interpol(mod_dict, obs_dict)
+
+    # get validation statistics
+    stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int)
+    elev_suite = stats.getStats()
+    elev_suite['r_squared'] = stats.linReg()['r_2']
+
+    return elev_suite

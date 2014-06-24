@@ -18,9 +18,11 @@ class TidalStats:
     visualizations and tables.
     '''
     def __init__(self, model_data, observed_data, time_step, start_time):
-        self.model = model_data.astype(np.float64)
-        self.observed = observed_data.astype(np.float64)
-        self.error = model_data - observed_data
+	self.model = np.asarray(model_data)
+	self.model = self.model.astype(np.float64)
+	self.observed = np.asarray(observed_data)
+	self.observed = self.observed.astype(np.float64)
+        self.error = self.model - self.observed
 
         # set up array of datetimes corresponding to the data
         self.times = start_time + np.arange(model_data.size) * time_step
@@ -38,6 +40,7 @@ class TidalStats:
         '''
         Returns the root mean squared error of the data.
         '''
+	print type(self.error[0])
         return np.sqrt(np.mean(self.error**2))
 
     def getSD(self):
@@ -163,11 +166,12 @@ class TidalStats:
 
         Gives a 100(1-alpha)% confidence interval for the slope
         '''
-        mod = self.model
-        mod_mean = np.mean(mod)
-        obs = self.observed
+	# get rid of those friggin NaNs
+	obs = self.observed[np.where(~np.isnan(self.observed))[0]]
+	mod = self.model[np.where(~np.isnan(self.observed))[0]]
         obs_mean = np.mean(obs)
-        n = mod.size
+	mod_mean = np.mean(mod)
+	n = mod.size
         df = n - 2
 
         # calculate square sums
@@ -296,7 +300,7 @@ class TidalStats:
 	plt.text(mod_max - 2, 0, r_string)
 	plt.show()
 
-	plt.savefig('/array/home/rkarsten/common_tidal_files/python/jonCode/regressionPlot.png')
+	#plt.savefig('/array/home/rkarsten/common_tidal_files/python/jonCode/regressionPlot.png')
 
     def plotData(self, graph='time'):
         '''

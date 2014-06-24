@@ -20,9 +20,6 @@ def interpol(data_1, data_2, time_step=timedelta(minutes=10)):
     data. Is a timedelta object, defaults to 10 minutes.
     '''
 
-    print data_1['start'], data_1['end']
-    print data_2['start'], data_2['end']
-
     # create POSIX timestamp array corresponding to each dataset
     times_1 = data_1['start'] + np.arange(data_1['pts'].size) * data_1['step']
     times_2 = data_2['start'] + np.arange(data_2['pts'].size) * data_2['step']
