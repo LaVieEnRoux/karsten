@@ -35,6 +35,7 @@ def valTable(filename):
 		stats = site['dg_elev_val']
 		type.append('Elevation')
 		name.append('TG{}'.format(num_tg))
+		num_tg += 1
 
 	    RMSE.append(stats['RMSE'])
 	    CF.append(stats['CF'])
@@ -42,12 +43,14 @@ def valTable(filename):
 	    POF.append(stats['POF'])
 	    NOF.append(stats['NOF'])
 	    MDPO.append(stats['MDPO'])
+	    MDNO.append(stats['MDNO'])
 	    skill.append(stats['skill'])
 	    r2.append(stats['r_squared'])
 
 	# put stats into dict and create dataframe
 	val_dict = {'Type':type, 'RMSE':RMSE, 'CF':CF, 'SD':SD, 'POF':POF, 
-		    'NOF':NOF, 'MDPO':MDPO, 'skill':skill, 'r2':r2}
+		    'NOF':NOF, 'MDPO':MDPO, 'MDNO':MDNO,  'skill':skill, 
+		    'r2':r2}
 	
 	table = pd.DataFrame(data=val_dict, index=name,
 			     columns=val_dict.keys())

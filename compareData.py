@@ -109,6 +109,8 @@ def compareUV(data):
 
     # do statistic on harmonic constituents as well
 
+    speed_stats.plotData()
+
     # output statistics in useful format
 #    return (elev_suite, speed_suite, dir_suite)
     return (speed_suite, dir_suite)
@@ -156,8 +158,5 @@ def compareTG(data, site):
     stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int)
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
-
-    lr = stats.linReg()
-    stats.plotRegression(lr)
 
     return elev_suite
