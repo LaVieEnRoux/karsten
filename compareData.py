@@ -6,16 +6,14 @@ import sys
 sys.path.append('/array/home/116822s/github/UTide')
 from utide import ut_reconstr
 
-def loadDict(pts, step, start, end):
+def loadDict(pts, time):
     '''
     Loads data into a dictionary for input into smooth and interpolate
     functions.
     '''
     out_d = {}
     out_d['pts'] = pts
-    out_d['step'] = step
-    out_d['start'] = start
-    out_d['end'] = end
+    out_d['time'] = time
 
     return out_d
 
@@ -47,13 +45,12 @@ def compareUV(data):
     mod_harm = data['speed_mod_harmonics']
     obs_harm = data['speed_obs_harmonics']
    
-    # grab some important values
-    mod_start = dn2dt(mod_time[0])
-    mod_next = dn2dt(mod_time[1])
-    mod_step = mod_next - mod_start
-    obs_start = dn2dt(obs_time[0])
-    obs_next = dn2dt(obs_time[1])
-    obs_step = obs_next - obs_start
+    # convert times to datetime
+    mod_dt, obs_dt = [], []
+    for i in mod_time:
+	mod_dt.append(dn2dt(i))
+    for j in obs_time:
+	obs_dt.append(dn2dt(j))
 
     # put u v velocities into a useful format
     mod_spd = np.sqrt(mod_u**2 + mod_v**2)
@@ -72,8 +69,8 @@ def compareUV(data):
 	mod_dr_int = np.arctan(pred_uv[0] / pred_uv[1])
 	obs_sp_int = obs_spd
 	obs_dr_int = obs_dir
-	step_int = obs_step
-	start_int = obs_start
+	step_int = obs_dt[1] - obs_dt[0]
+	start_int = obs_dt[0]
 
     else:
         # interpolate the data onto a common time step for each data type
@@ -82,13 +79,13 @@ def compareUV(data):
 #        (mod_el_int, obs_el_int, step_int, start_int) = \
 #            interpol(mod_el_d, obs_el_d)
 
-        mod_sp_d = loadDict(mod_spd, mod_step, mod_start, mod_time[-1])
-        obs_sp_d = loadDict(obs_spd, obs_step, obs_start, obs_time[-1])
+        mod_sp_d = loadDict(mod_spd, mod_dt)
+        obs_sp_d = loadDict(obs_spd, obs_dt)
         (mod_sp_int, obs_sp_int, step_int, start_int) = \
             interpol(mod_sp_d, obs_sp_d)
 
-        mod_dr_d = loadDict(mod_dir, mod_step, mod_start, mod_time[-1])
-        obs_dr_d = loadDict(obs_dir, obs_step, obs_start, obs_time[-1])
+        mod_dr_d = loadDict(mod_dir, mod_dt)
+        obs_dr_d = loadDict(obs_dir, obs_dt)
         (mod_dr_int, obs_dr_int, step_int, start_int) = \
             interpol(mod_dr_d, obs_dr_d)
 
@@ -96,6 +93,7 @@ def compareUV(data):
 #    elev_stats = TidalStats(mod_el_int, obs_el_int, step_int, start_int)
     speed_stats = TidalStats(mod_sp_int, obs_sp_int, step_int, start_int)
     dir_stats = TidalStats(mod_dr_int, obs_dr_int, step_int, start_int)
+
 
     # obtain necessary statistics
 #    elev_suite = elev_stats.getStats()
@@ -108,8 +106,6 @@ def compareUV(data):
     dir_suite['r_squared'] = dir_stats.linReg()['r_2']
 
     # do statistic on harmonic constituents as well
-
-    speed_stats.plotData()
 
     # output statistics in useful format
 #    return (elev_suite, speed_suite, dir_suite)
@@ -145,12 +141,10 @@ def compareTG(data, site):
 	obs_time.append(dn2dt(v))
     for j, w in enumerate(mod_datenums):
 	mod_time.append(dn2dt(w))
-    obs_step = obs_time[1] - obs_time[0]
-    mod_step = mod_time[1] - mod_time[0]
 
     # interpolate timeseries onto a common timestep
-    obs_dict = loadDict(obs_elev, obs_step, obs_time[0], obs_time[-1])
-    mod_dict = loadDict(mod_elev, mod_step, mod_time[0], mod_time[-1])
+    obs_dict = loadDict(obs_elev, obs_time)
+    mod_dict = loadDict(mod_elev, mod_time)
     (obs_elev_int, mod_elev_int, step_int, start_int) = \
         interpol(mod_dict, obs_dict)
 

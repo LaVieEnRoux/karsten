@@ -2,7 +2,8 @@ import numpy as np
 from scipy.stats import t
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-
+from scipy.interpolate import interp1d
+import time
 
 class TidalStats:
     '''
@@ -14,6 +15,9 @@ class TidalStats:
     data which have already been interpolated so they line up, the
     time step between points, and the start time of the data.
 
+    To remove NaNs in observed data, linear interpolation is performed to
+    fill gaps.
+
     Functions are used to calculate statistics and to output
     visualizations and tables.
     '''
@@ -22,16 +26,21 @@ class TidalStats:
 	self.model = self.model.astype(np.float64)
 	self.observed = np.asarray(observed_data)
 	self.observed = self.observed.astype(np.float64)
-        self.error = self.model - self.observed
 
-	# include set of values without nans
-	self.obs_nonan = self.observed[np.where(~np.isnan(self.observed))[0]]
-	self.err_nonan = self.error[np.where(~np.isnan(self.observed))[0]]
-	self.mod_nonan = self.model[np.where(~np.isnan(self.observed))[0]]
-
-        # set up array of datetimes corresponding to the data
+        # set up array of datetimes corresponding to the data (and timestamps)
         self.times = start_time + np.arange(model_data.size) * time_step
         self.step = time_step
+	timestamps = np.zeros(len(self.times))
+	for j, jj in enumerate(self.times):
+	    timestamps[j] = time.mktime(jj.timetuple())
+
+	# use linear interpolation to eliminate any NaNs in the observed data
+	obs_nonan = self.observed[np.where(~np.isnan(self.observed))[0]]
+	time_nonan = timestamps[np.where(~np.isnan(self.observed))[0]]
+	func = interp1d(time_nonan, obs_nonan)
+	self.observed = func(timestamps)
+
+	self.error = self.observed - self.model
 
     # establish limits as defined by NOAA standard
     MDO_MAX = 1440
@@ -41,23 +50,22 @@ class TidalStats:
         '''
         Returns the root mean squared error of the data.
         '''
-        return np.sqrt(np.mean(self.err_nonan**2))
+        return np.sqrt(np.mean(self.error**2))
 
     def getSD(self):
         '''
         Returns the standard deviation of the error.
         '''
-        return np.sqrt(np.mean(abs(self.err_nonan - 
-				   np.mean(self.err_nonan)**2)))
+        return np.sqrt(np.mean(abs(self.error - np.mean(self.error)**2)))
 
     def getCF(self):
         '''
         Returns the central frequency of the data, i.e. the fraction of
         errors that lie within the defined limit.
         '''
-        central_err = [i for i in self.err_nonan if i < self.ERROR_BOUND]
+        central_err = [i for i in self.error if abs(i) < self.ERROR_BOUND]
         central_num = len(central_err)
-        total = self.err_nonan.size
+        total = self.error.size
 
         return (float(central_num) / float(total)) * 100
 
@@ -66,9 +74,9 @@ class TidalStats:
         Returns the positive outlier frequency of the data, i.e. the
         fraction of errors that lie above the defined limit.
         '''
-        upper_err = [i for i in self.err_nonan if i > 2 * self.ERROR_BOUND]
+        upper_err = [i for i in self.error if i > 2 * self.ERROR_BOUND]
         upper_num = len(upper_err)
-        total = self.err_nonan.size
+        total = self.error.size
 
         return (float(upper_num) / float(total)) * 100
 
@@ -77,9 +85,9 @@ class TidalStats:
         Returns the negative outlier frequency of the data, i.e. the
         fraction of errors that lie below the defined limit.
         '''
-        lower_err = [i for i in self.err_nonan if i < -2 * self.ERROR_BOUND]
+        lower_err = [i for i in self.error if i < -2 * self.ERROR_BOUND]
         lower_num = len(lower_err)
-        total = self.err_nonan.size
+        total = self.error.size
 
         return (float(lower_num) / float(total)) * 100
 
@@ -99,8 +107,6 @@ class TidalStats:
         for i in np.arange(self.error.size):
             if (self.error[i] > self.ERROR_BOUND):
                 current_duration += timestep
-	    elif ((np.isnan(self.error[i])) and (current_duration != 0)):
-		current_duration += timestep
             else:
                 if (current_duration > max_duration):
                     max_duration = current_duration
@@ -124,8 +130,6 @@ class TidalStats:
         for i in np.arange(self.error.size):
             if (self.error[i] < -self.ERROR_BOUND):
                 current_duration += timestep
-	    elif ((np.isnan(self.error[i])) and (current_duration != 0)):
-		current_duration += timestep
             else:
                 if (current_duration > max_duration):
                     max_duration = current_duration
@@ -139,12 +143,12 @@ class TidalStats:
         '''
 
         # start by calculating MSE
-        MSE = np.mean(self.err_nonan**2)
+        MSE = np.mean(self.error**2)
 
         # now calculate the rest of it
-        obs_mean = np.mean(self.obs_nonan)
-        skill = 1 - MSE / np.mean((abs(self.mod_nonan - obs_mean) +
-                                   abs(self.obs_nonan - obs_mean))**2)
+        obs_mean = np.mean(self.observed)
+        skill = 1 - MSE / np.mean((abs(self.model - obs_mean) +
+                                   abs(self.observed - obs_mean))**2)
 
         return skill
 
@@ -172,8 +176,8 @@ class TidalStats:
         Gives a 100(1-alpha)% confidence interval for the slope
         '''
 	# get rid of those friggin NaNs
-	obs = self.obs_nonan
-	mod = self.mod_nonan
+	obs = self.observed
+	mod = self.model
         obs_mean = np.mean(obs)
 	mod_mean = np.mean(mod)
 	n = mod.size
@@ -228,10 +232,10 @@ class TidalStats:
         i.e. removes one datum from the set, redoes linreg on the training
         set, and uses the results to attempt to predict the missing datum.
         '''
-        cross_error = np.zeroes(self.mod_nonan.size)
-        cross_pred = np.zeroes(self.mod_nonan.size)
-        model_orig = self.mod_nonan
-        obs_orig = self.obs_nonan
+        cross_error = np.zeroes(self.model.size)
+        cross_pred = np.zeroes(self.model.size)
+        model_orig = self.model
+        obs_orig = self.observed
         time_orig = self.time
 
         # loop through each element, remove it
@@ -254,7 +258,7 @@ class TidalStats:
         # calculate PRESS and PRRMSE statistics for predicted data
         # (predicted residual sum of squares and predicted RMSE)
         PRESS = np.sum(cross_error**2)
-        PRRMSE = np.sqrt(PRESS) / self.mod_nonan.size
+        PRRMSE = np.sqrt(PRESS) / self.model.size
 
         # return data in a dictionary
         data = {}
@@ -269,11 +273,11 @@ class TidalStats:
         Plots a visualization of the output from linear regression,
         including confidence intervals for predictands and slope.
         '''
-        plt.scatter(self.mod_nonan, self.obs_nonan, c='b', alpha=0.5)
+        plt.scatter(self.model, self.observed, c='b', marker='+', alpha=0.5)
 
         # plot regression line
-        mod_max = np.amax(self.mod_nonan)
-	mod_min = np.amin(self.mod_nonan)
+        mod_max = np.amax(self.model)
+	mod_min = np.amin(self.model)
         upper_intercept = lr['intercept'] + lr['pred_CI_width']
         lower_intercept = lr['intercept'] - lr['pred_CI_width']
         plt.plot([mod_min, mod_max], [mod_min * lr['slope'] + lr['intercept'], 
@@ -299,6 +303,10 @@ class TidalStats:
 		 [mod_min * lr['slope'] + lower_intercept,
                   mod_max * lr['slope'] + lower_intercept],
                  color='g', linestyle='--', linewidth=2)
+
+	# plot y=x for comparison
+	plt.plot([mod_min, mod_min], [mod_max, mod_max], color='k', 
+		 linewidth=1)
 
         plt.xlabel('Modeled Data')
         plt.ylabel('Observed Data')
