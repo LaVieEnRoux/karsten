@@ -22,19 +22,19 @@ class TidalStats:
     visualizations and tables.
     '''
     def __init__(self, model_data, observed_data, time_step, start_time):
-	self.model = np.asarray(model_data)
-	self.model = self.model.astype(np.float64)
-	self.observed = np.asarray(observed_data)
-	self.observed = self.observed.astype(np.float64)
+        self.model = np.asarray(model_data)
+        self.model = self.model.astype(np.float64)
+        self.observed = np.asarray(observed_data)
+        self.observed = self.observed.astype(np.float64)
 
         # set up array of datetimes corresponding to the data (and timestamps)
         self.times = start_time + np.arange(model_data.size) * time_step
         self.step = time_step
-	timestamps = np.zeros(len(self.times))
-	for j, jj in enumerate(self.times):
-	    timestamps[j] = time.mktime(jj.timetuple())
+        timestamps = np.zeros(len(self.times))
+        for j, jj in enumerate(self.times):
+            timestamps[j] = time.mktime(jj.timetuple())
 
-	# use linear interpolation to eliminate any NaNs in the observed data
+	# uses linear interpolation to eliminate any NaNs in the observed data
 	obs_nonan = self.observed[np.where(~np.isnan(self.observed))[0]]
 	time_nonan = timestamps[np.where(~np.isnan(self.observed))[0]]
 	func = interp1d(time_nonan, obs_nonan)
@@ -112,7 +112,7 @@ class TidalStats:
                     max_duration = current_duration
                 current_duration = 0
 
-        return max_duration
+        return max(max_duration, current_duration)
 
     def getMDNO(self):
         '''
@@ -135,7 +135,7 @@ class TidalStats:
                     max_duration = current_duration
                 current_duration = 0
 
-        return max_duration
+        return max(max_duration, current_duration)
 
     def getWillmott(self):
         '''
@@ -280,32 +280,32 @@ class TidalStats:
 	mod_min = np.amin(self.model)
         upper_intercept = lr['intercept'] + lr['pred_CI_width']
         lower_intercept = lr['intercept'] - lr['pred_CI_width']
-        plt.plot([mod_min, mod_max], [mod_min * lr['slope'] + lr['intercept'], 
+        plt.plot([mod_min, mod_max], [mod_min * lr['slope'] + lr['intercept'],
 				      mod_max * lr['slope'] + lr['intercept']],
                  color='k', linestyle='-', linewidth=2)
 
         # plot CI's for slope
-        plt.plot([mod_min, mod_max], 
-		 [mod_min * lr['slope_CI'][0] + lr['intercept_CI'][0], 
+        plt.plot([mod_min, mod_max],
+		 [mod_min * lr['slope_CI'][0] + lr['intercept_CI'][0],
 		  mod_max * lr['slope_CI'][0] + lr['intercept_CI'][0]],
                  color='r', linestyle='--', linewidth=2)
-        plt.plot([mod_min, mod_max], 
+        plt.plot([mod_min, mod_max],
 		 [mod_min * lr['slope_CI'][1] + lr['intercept_CI'][1],
                   mod_max * lr['slope_CI'][1] + lr['intercept_CI'][1]],
                  color='r', linestyle='--', linewidth=2)
 
         # plot CI's for predictands
-        plt.plot([mod_min, mod_max], 
+        plt.plot([mod_min, mod_max],
 		 [mod_min * lr['slope'] + upper_intercept,
                   mod_max * lr['slope'] + upper_intercept],
                  color='g', linestyle='--', linewidth=2)
-        plt.plot([mod_min, mod_max], 
+        plt.plot([mod_min, mod_max],
 		 [mod_min * lr['slope'] + lower_intercept,
                   mod_max * lr['slope'] + lower_intercept],
                  color='g', linestyle='--', linewidth=2)
 
 	# plot y=x for comparison
-	plt.plot([mod_min, mod_min], [mod_max, mod_max], color='k', 
+	plt.plot([mod_min, mod_min], [mod_max, mod_max], color='k',
 		 linewidth=1)
 
         plt.xlabel('Modeled Data')
