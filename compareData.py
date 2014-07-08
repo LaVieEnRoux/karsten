@@ -100,6 +100,8 @@ def compareUV(data):
     speed_suite = speed_stats.getStats()
     dir_suite = dir_stats.getStats()
 
+    speed_stats.plotData()
+
     # do some linear regression
 #    elev_suite['r_squared'] = elev_stats.linReg()['r_2']
     speed_suite['r_squared'] = speed_stats.linReg()['r_2']
@@ -131,7 +133,8 @@ def compareTG(data, site):
     obs_elev = data[dat_key]
     obs_datenums = data[time_key]
     mod_datenums = data['mod_time']
-    
+    mod_harm = data[mod_harm_key]
+   
     # subtract mean from tidegauge stuff
     obs_elev = obs_elev - np.mean(obs_elev)
 
@@ -142,15 +145,42 @@ def compareTG(data, site):
     for j, w in enumerate(mod_datenums):
 	mod_time.append(dn2dt(w))
 
-    # interpolate timeseries onto a common timestep
-    obs_dict = loadDict(obs_elev, obs_time)
-    mod_dict = loadDict(mod_elev, mod_time)
-    (obs_elev_int, mod_elev_int, step_int, start_int) = \
-        interpol(mod_dict, obs_dict)
+    # create image for dr k
+
+    reconstr_h = ut_reconstr(mod_datenums, mod_harm)[0]
+
+    stats = TidalStats(reconstr_h, mod_elev, mod_time[1] - mod_time[0], mod_time[1])
+    elev_suite = stats.getStats()
+    stats.plotData()
+    print elev_suite
+    return elev_suite
+
+
+'''
+    # check if they line up in the time domain
+    if (mod_time[-1] < obs_time[0] or obs_time[-1] < mod_time[0]):
+        
+	# use ut_reconstr to create a new timeseries
+	mod_elev_int = ut_reconstr(obs_datenums, mod_harm)[0]
+	obs_elev_int = obs_elev
+	step_int = obs_time[1] - obs_time[0]
+	start_int = obs_time[0]
+
+    else:
+
+        # interpolate timeseries onto a common timestep
+        obs_dict = loadDict(obs_elev, obs_time)
+        mod_dict = loadDict(mod_elev, mod_time)
+        (obs_elev_int, mod_elev_int, step_int, start_int) = \
+            interpol(mod_dict, obs_dict)
+
 
     # get validation statistics
     stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int)
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
 
+    stats.plotData()
+ 
     return elev_suite
+'''

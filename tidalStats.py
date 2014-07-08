@@ -35,10 +35,11 @@ class TidalStats:
             timestamps[j] = time.mktime(jj.timetuple())
 
 	# uses linear interpolation to eliminate any NaNs in the observed data
-	obs_nonan = self.observed[np.where(~np.isnan(self.observed))[0]]
-	time_nonan = timestamps[np.where(~np.isnan(self.observed))[0]]
-	func = interp1d(time_nonan, obs_nonan)
-	self.observed = func(timestamps)
+	if (True in np.isnan(self.observed)):
+	    obs_nonan = self.observed[np.where(~np.isnan(self.observed))[0]]
+	    time_nonan = timestamps[np.where(~np.isnan(self.observed))[0]]
+	    func = interp1d(time_nonan, obs_nonan)
+	    self.observed = func(timestamps)
 
 	self.error = self.observed - self.model
 

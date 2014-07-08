@@ -57,8 +57,8 @@ def valTable(filename):
 
 	# export as .csv file
 	path_base = '/array/home/rkarsten/common_tidal_files/python/jonCode/'
-	out_file = path_base + '{}_val.csv'.format(run)
+	out_file = path_base + '{}_val3D.csv'.format(run)
 	table.to_csv(out_file)
 
-file = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
+file = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_3D.pkl'
 valTable(file)

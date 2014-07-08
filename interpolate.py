@@ -36,6 +36,9 @@ def interpol(data_1, data_2, time_step=timedelta(minutes=10)):
     end = min(times_1[-1], times_2[-1])
     length = end - start
 
+    print dt_1[0], dt_1[-1]
+    print dt_2[0], dt_2[-1]
+
     # determine number of steps in the interpolation interval
     step_sec = time_step.total_seconds()
     steps = int(length / step_sec)

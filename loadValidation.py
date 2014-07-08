@@ -23,6 +23,7 @@ def loadValidation():
 
     # load pickle file
     filename = '/array/home/rkarsten/common_tidal_files/python/wesleyCode/generalRunFiles/structTest2.p'
+    #filename = '/array/home/107002b/github/karsten/generalRunFiles/structStationTest.p'
     struct_f = open(filename, 'rb')
     struct = pickle.load(struct_f)
 
@@ -44,7 +45,8 @@ def loadValidation():
     	        site['dg_elev_val'] = elev_suite_dg
     	        site['gp_elev_val'] = elev_suite_gp
 
-    filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
+    filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_test.pkl'
+    #filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_3D.pkl'
     out_f = open(filename_out, 'wb')
     pickle.dump(struct, out_f)
 
