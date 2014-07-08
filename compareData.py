@@ -3,7 +3,7 @@ from tidalStats import TidalStats
 from interpolate import interpol
 from datetime import datetime, timedelta
 import sys
-sys.path.append('/array/home/116822s/github/UTide')
+sys.path.append('/EcoII/github/UTide/')
 from utide import ut_reconstr
 
 def loadDict(pts, time):
@@ -44,7 +44,7 @@ def compareUV(data):
     obs_v = data['obs_timeseries']['v']
     mod_harm = data['speed_mod_harmonics']
     obs_harm = data['speed_obs_harmonics']
-   
+
     # convert times to datetime
     mod_dt, obs_dt = [], []
     for i in mod_time:
@@ -134,32 +134,20 @@ def compareTG(data, site):
     obs_datenums = data[time_key]
     mod_datenums = data['mod_time']
     mod_harm = data[mod_harm_key]
-   
+
     # subtract mean from tidegauge stuff
     obs_elev = obs_elev - np.mean(obs_elev)
 
     # convert times and grab values
-    obs_time, mod_time = [], [] 
+    obs_time, mod_time = [], []
     for i, v in enumerate(obs_datenums):
 	obs_time.append(dn2dt(v))
     for j, w in enumerate(mod_datenums):
 	mod_time.append(dn2dt(w))
 
-    # create image for dr k
-
-    reconstr_h = ut_reconstr(mod_datenums, mod_harm)[0]
-
-    stats = TidalStats(reconstr_h, mod_elev, mod_time[1] - mod_time[0], mod_time[1])
-    elev_suite = stats.getStats()
-    stats.plotData()
-    print elev_suite
-    return elev_suite
-
-
-'''
     # check if they line up in the time domain
     if (mod_time[-1] < obs_time[0] or obs_time[-1] < mod_time[0]):
-        
+
 	# use ut_reconstr to create a new timeseries
 	mod_elev_int = ut_reconstr(obs_datenums, mod_harm)[0]
 	obs_elev_int = obs_elev
@@ -181,6 +169,5 @@ def compareTG(data, site):
     elev_suite['r_squared'] = stats.linReg()['r_2']
 
     stats.plotData()
- 
+
     return elev_suite
-'''

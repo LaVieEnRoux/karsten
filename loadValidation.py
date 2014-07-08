@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from compareData import compareUV, compareTG
 import sys
-sys.path.append('/array/home/116822s/github/UTide/')
+sys.path.append('/EcoII/github/UTide/')
 from utide import ut_reconstr
 
 
@@ -32,20 +32,20 @@ def loadValidation():
 
         # iterate through the sites in the run
         for site in run:
-    
+
     	    # check if site is a tidegauge site
     	    if ('obs_time' in site.keys()):
     	        (speed_suite, dir_suite) = compareUV(site)
     	        site['speed_val'] = speed_suite
     	        site['dir_val'] = dir_suite
-    	    
+
     	    else:
     	        elev_suite_dg = compareTG(site, 'dg')
     	        elev_suite_gp = compareTG(site, 'gp')
     	        site['dg_elev_val'] = elev_suite_dg
     	        site['gp_elev_val'] = elev_suite_gp
 
-    filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_test.pkl'
+    filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
     #filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_3D.pkl'
     out_f = open(filename_out, 'wb')
     pickle.dump(struct, out_f)

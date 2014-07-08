@@ -11,11 +11,11 @@ def valTable(filename):
     '''
     # load in the struct
     in_f = open(filename, 'rb')
-    struct = pickle.load(in_f)    
+    struct = pickle.load(in_f)
 
     # iterate through the runs
     for run in struct:
-        
+
 	# initialize  lists
 	val_dict = {}
 	type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2 = \
@@ -24,7 +24,7 @@ def valTable(filename):
 
 	# iterate through sites and get validation stats
 	for site in struct[run]:
-	    
+
 	    # check if it's a tidegauge site
 	    if ('obs_time' in site.keys()):
 		stats = site['speed_val']
@@ -48,17 +48,17 @@ def valTable(filename):
 	    r2.append(stats['r_squared'])
 
 	# put stats into dict and create dataframe
-	val_dict = {'Type':type, 'RMSE':RMSE, 'CF':CF, 'SD':SD, 'POF':POF, 
-		    'NOF':NOF, 'MDPO':MDPO, 'MDNO':MDNO,  'skill':skill, 
+	val_dict = {'Type':type, 'RMSE':RMSE, 'CF':CF, 'SD':SD, 'POF':POF,
+		    'NOF':NOF, 'MDPO':MDPO, 'MDNO':MDNO,  'skill':skill,
 		    'r2':r2}
-	
+
 	table = pd.DataFrame(data=val_dict, index=name,
 			     columns=val_dict.keys())
 
 	# export as .csv file
-	path_base = '/array/home/rkarsten/common_tidal_files/python/jonCode/'
-	out_file = path_base + '{}_val3D.csv'.format(run)
+	path_base = '/EcoII/github/jonCode/'
+	out_file = path_base + '{}_val.csv'.format(run)
 	table.to_csv(out_file)
 
-file = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_3D.pkl'
+file = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
 valTable(file)
