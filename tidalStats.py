@@ -188,7 +188,7 @@ class TidalStats:
 		shift_obs = self.observed
 
 	    start = self.times[abs(i)]
-	    step = self.times[1] - self.time[0]
+	    step = self.times[1] - self.times[0]
 	
 	    # create TidalStats class for shifted data and get the RMSE
 	    stats = TidalStats(shift_mod, shift_obs, step, start)
@@ -200,13 +200,27 @@ class TidalStats:
 	best_phase = phases[min_index]
 	phase_minutes = best_phase * (step_sec / 60)
 
-	print 'Best phase length: {} minutes'.format(phase_minutes)
-
 	# plot RMSE vs. the phase shift to ensure we're getting the right one
 	if debug:
-	    plt.plot(phases, errors, label='Phase Shift vs. RMSE')
-	    plt.xlabel('Timesteps of Shift')
-	    plt.ylabel('Root Mean Squared Error')
+	    #plt.plot(phases, errors, label='Phase Shift vs. RMSE')
+	    #plt.vlines(best_phase, min(errors), max(errors))
+	    #plt.xlabel('Timesteps of Shift')
+	    #plt.ylabel('Root Mean Squared Error')
+	    #plt.show()
+
+	    # plot data on top of shifted data
+	    if (best_phase < 0):
+		plt.plot(self.times[-best_phase:],
+			 self.model[-best_phase:])
+		plt.plot(self.times[-best_phase:],
+			 self.model[:self.length + best_phase], color='k')
+		plt.plot(self.times[-best_phase:],
+			 self.observed[:self.length + best_phase],
+			 color='r')
+		plt.xlabel('Times')
+		plt.ylabel('Values')
+		plt.title('Shifted Data vs. Original Data')
+		plt.show()
 
 	return phase_minutes
 

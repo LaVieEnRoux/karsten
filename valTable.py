@@ -57,8 +57,7 @@ def valTable(filename):
 			     columns=val_dict.keys())
 
 	# export as .csv file
-	path_base = '/EcoII/github/jonCode/'
-	out_file = path_base + '{}_val.csv'.format(run)
+	out_file = '{}_val.csv'.format(run)
 	table.to_csv(out_file)
 
 file = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'

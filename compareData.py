@@ -2,6 +2,7 @@ import numpy as np
 from tidalStats import TidalStats
 from interpolate import interpol
 from datetime import datetime, timedelta
+from utide import ut_reconstr
 
 def loadDict(pts, time):
     '''
@@ -125,8 +126,8 @@ def compareUV(data):
     dir_suite['r_squared'] = dir_stats.linReg()['r_2']
 
     # get best phase
-    speed_suite['phase'] = speed_stats.getPhase(debug=True)
-    dir_suite['phase'] = dir_stats.getPhase(debug=True)
+    speed_suite['phase'] = speed_stats.getPhase(debug=False)
+    dir_suite['phase'] = dir_stats.getPhase(debug=False)
 
     # output statistics in useful format
 #    return (elev_suite, speed_suite, dir_suite)
@@ -187,6 +188,6 @@ def compareTG(data, site):
     stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int)
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
-    elev_suite['phase'] = stats.getPhase(debug=True)
+    elev_suite['phase'] = stats.getPhase(debug=False)
 
     return elev_suite
