@@ -18,8 +18,8 @@ def valTable(filename):
 
 	# initialize  lists
 	val_dict = {}
-	type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2 = \
-	[], [], [], [], [], [], [], [], [], [], []
+	type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase = \
+	[], [], [], [], [], [], [], [], [], [], [], []
 	num_tg = 1
 
 	# iterate through sites and get validation stats
@@ -46,11 +46,12 @@ def valTable(filename):
 	    MDNO.append(stats['MDNO'])
 	    skill.append(stats['skill'])
 	    r2.append(stats['r_squared'])
+	    phase.append(stats['phase'])
 
 	# put stats into dict and create dataframe
 	val_dict = {'Type':type, 'RMSE':RMSE, 'CF':CF, 'SD':SD, 'POF':POF,
 		    'NOF':NOF, 'MDPO':MDPO, 'MDNO':MDNO,  'skill':skill,
-		    'r2':r2}
+		    'r2':r2, 'phase':phase}
 
 	table = pd.DataFrame(data=val_dict, index=name,
 			     columns=val_dict.keys())

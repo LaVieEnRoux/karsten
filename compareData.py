@@ -2,9 +2,6 @@ import numpy as np
 from tidalStats import TidalStats
 from interpolate import interpol
 from datetime import datetime, timedelta
-import sys
-sys.path.append('/EcoII/github/UTide/')
-from utide import ut_reconstr
 
 def loadDict(pts, time):
     '''
@@ -23,6 +20,15 @@ def dn2dt(datenum):
     '''
     return datetime.fromordinal(int(datenum)) + timedelta(days=datenum%1) - \
            timedelta(days=366)
+
+def isAllEqual(array):
+    '''
+    Checks if every value in the input array is equal.
+    '''
+    first = array[0]
+    equal = [i for i in array if i == first]
+
+    return len(equal) == len(array)
 
 def compareUV(data):
     '''
@@ -52,6 +58,7 @@ def compareUV(data):
     for j in obs_time:
 	obs_dt.append(dn2dt(j))
 
+    #import pdb; pdb.set_trace()
     # put u v velocities into a useful format
     mod_spd = np.sqrt(mod_u**2 + mod_v**2)
     obs_spd = np.sqrt(obs_u**2 + obs_v**2)
@@ -63,6 +70,18 @@ def compareUV(data):
 
 	pred_uv = ut_reconstr(obs_time, mod_harm)
 	pred_uv = np.asarray(pred_uv)
+
+	retries = 0
+
+	# check if ut_reconstr worked
+	while (isAllEqual(pred_uv[0]) and (retries < 10)):
+	    pred_uv = ut_reconstr(obs_time, mod_harm)
+	    pred_uv = np.asarray(pred_uv)
+
+	    print "ut_reconstr failed! Let's do it again."
+	    retries += 1
+
+	print 'ut_reconstr finally worked!'
 
 	# redo speed and direction and set interpolated variables
 	mod_sp_int = np.sqrt(pred_uv[0]**2 + pred_uv[1]**2)
@@ -100,14 +119,14 @@ def compareUV(data):
     speed_suite = speed_stats.getStats()
     dir_suite = dir_stats.getStats()
 
-    speed_stats.plotData()
-
     # do some linear regression
 #    elev_suite['r_squared'] = elev_stats.linReg()['r_2']
     speed_suite['r_squared'] = speed_stats.linReg()['r_2']
     dir_suite['r_squared'] = dir_stats.linReg()['r_2']
 
-    # do statistic on harmonic constituents as well
+    # get best phase
+    speed_suite['phase'] = speed_stats.getPhase(debug=True)
+    dir_suite['phase'] = dir_stats.getPhase(debug=True)
 
     # output statistics in useful format
 #    return (elev_suite, speed_suite, dir_suite)
@@ -145,6 +164,7 @@ def compareTG(data, site):
     for j, w in enumerate(mod_datenums):
 	mod_time.append(dn2dt(w))
 
+
     # check if they line up in the time domain
     if (mod_time[-1] < obs_time[0] or obs_time[-1] < mod_time[0]):
 
@@ -167,7 +187,6 @@ def compareTG(data, site):
     stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int)
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
-
-    stats.plotData()
+    elev_suite['phase'] = stats.getPhase(debug=True)
 
     return elev_suite

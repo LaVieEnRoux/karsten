@@ -42,6 +42,7 @@ class TidalStats:
 	    self.observed = func(timestamps)
 
 	self.error = self.observed - self.model
+	self.length = self.error.size
 
     # establish limits as defined by NOAA standard
     MDO_MAX = 1440
@@ -66,9 +67,8 @@ class TidalStats:
         '''
         central_err = [i for i in self.error if abs(i) < self.ERROR_BOUND]
         central_num = len(central_err)
-        total = self.error.size
 
-        return (float(central_num) / float(total)) * 100
+        return (float(central_num) / float(self.length)) * 100
 
     def getPOF(self):
         '''
@@ -77,9 +77,8 @@ class TidalStats:
         '''
         upper_err = [i for i in self.error if i > 2 * self.ERROR_BOUND]
         upper_num = len(upper_err)
-        total = self.error.size
 
-        return (float(upper_num) / float(total)) * 100
+        return (float(upper_num) / float(self.length)) * 100
 
     def getNOF(self):
         '''
@@ -88,9 +87,8 @@ class TidalStats:
         '''
         lower_err = [i for i in self.error if i < -2 * self.ERROR_BOUND]
         lower_num = len(lower_err)
-        total = self.error.size
 
-        return (float(lower_num) / float(total)) * 100
+        return (float(lower_num) / float(self.length)) * 100
 
     def getMDPO(self):
         '''
@@ -153,6 +151,65 @@ class TidalStats:
 
         return skill
 
+    def getPhase(self, max_phase=timedelta(hours=3), debug=False):
+	'''
+	Attempts to find the phase shift between the model data and the
+	observed data.
+
+	Iteratively tests different phase shifts, and calculates the RMSE
+	for each one. The shift with the smallest RMSE is returned.
+
+	Argument max_phase' is the span of time across which the phase shifts
+	will be tested. If debug is set to True, a plot of the RMSE for each
+	phase shift will be shown.
+	'''
+	# grab the length of the timesteps in seconds
+	max_phase_sec = max_phase.seconds
+	step_sec = self.step.seconds
+	num_steps = max_phase_sec / step_sec
+
+	# iterate through the phase shifts and check RMSE for each
+	errors = []
+	phases = np.arange(-num_steps, num_steps)
+	for i in phases:
+	    
+	    # create shifted data
+	    if (i < 0):
+		# left shift
+		shift_mod = self.model[-i:]
+		shift_obs = self.observed[:self.length + i]
+	    if (i > 0):
+		# right shift
+		shift_mod = self.model[:self.length - i]
+		shift_obs = self.observed[i:]
+	    if (i == 0):
+		# no shift
+		shift_mod = self.model
+		shift_obs = self.observed
+
+	    start = self.times[abs(i)]
+	    step = self.times[1] - self.time[0]
+	
+	    # create TidalStats class for shifted data and get the RMSE
+	    stats = TidalStats(shift_mod, shift_obs, step, start)
+	    rms_error = stats.getRMSE()
+	    errors.append(rms_error)
+	    
+	# find the minimum rmse, and thus the minimum phase
+	min_index = errors.index(min(errors))
+	best_phase = phases[min_index]
+	phase_minutes = best_phase * (step_sec / 60)
+
+	print 'Best phase length: {} minutes'.format(phase_minutes)
+
+	# plot RMSE vs. the phase shift to ensure we're getting the right one
+	if debug:
+	    plt.plot(phases, errors, label='Phase Shift vs. RMSE')
+	    plt.xlabel('Timesteps of Shift')
+	    plt.ylabel('Root Mean Squared Error')
+
+	return phase_minutes
+
     def getStats(self):
         '''
         Returns each of the statistics in a dictionary.
@@ -176,7 +233,7 @@ class TidalStats:
 
         Gives a 100(1-alpha)% confidence interval for the slope
         '''
-	# get rid of those friggin NaNs
+	# set stuff up to make the code cleaner
 	obs = self.observed
 	mod = self.model
         obs_mean = np.mean(obs)

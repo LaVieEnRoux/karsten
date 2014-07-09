@@ -4,9 +4,6 @@ from tidalStats import TidalStats
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 from compareData import compareUV, compareTG
-import sys
-sys.path.append('/EcoII/github/UTide/')
-from utide import ut_reconstr
 
 
 def dn2dt(datenum):
@@ -45,7 +42,7 @@ def loadValidation():
     	        site['dg_elev_val'] = elev_suite_dg
     	        site['gp_elev_val'] = elev_suite_gp
 
-    filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
+    filename_out = 'val_struct.pkl'
     #filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_3D.pkl'
     out_f = open(filename_out, 'wb')
     pickle.dump(struct, out_f)
