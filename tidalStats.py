@@ -3,6 +3,7 @@ from scipy.stats import t
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from scipy.interpolate import interp1d
+from scipy.signal import correlate
 import time
 
 class TidalStats:
@@ -159,7 +160,7 @@ class TidalStats:
 	Iteratively tests different phase shifts, and calculates the RMSE
 	for each one. The shift with the smallest RMSE is returned.
 
-	Argument max_phase' is the span of time across which the phase shifts
+	Argument max_phase is the span of time across which the phase shifts
 	will be tested. If debug is set to True, a plot of the RMSE for each
 	phase shift will be shown.
 	'''
@@ -198,7 +199,7 @@ class TidalStats:
 	# find the minimum rmse, and thus the minimum phase
 	min_index = errors.index(min(errors))
 	best_phase = phases[min_index]
-	phase_minutes = best_phase * (step_sec / 60)
+	phase_minutes = best_phase * step_sec / 60
 
 	# plot RMSE vs. the phase shift to ensure we're getting the right one
 	if debug:
@@ -223,6 +224,29 @@ class TidalStats:
 		plt.show()
 
 	return phase_minutes
+
+    def altPhase(self):
+	'''
+	Alternate version of lag detection using scipy's cross correlation
+	function.
+	'''
+	# normalize arrays
+	mod = self.model
+	mod -= self.model.mean()
+	mod /= mod.std()
+	obs = self.observed
+	obs -= self.observed.mean()
+	obs /= obs.std()
+
+	# get cross correlation and find number of timesteps of shift
+	xcorr = correlate(mod, obs)
+	samples = np.arange(1 - self.length, self.length)
+	time_shift = samples[xcorr.argmax()]
+
+	# find number of minutes in time shift
+	step_sec = self.step.seconds
+	lag = time_shift * step_sec / 60
+	return lag
 
     def getStats(self):
         '''

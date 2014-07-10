@@ -22,15 +22,6 @@ def dn2dt(datenum):
     return datetime.fromordinal(int(datenum)) + timedelta(days=datenum%1) - \
            timedelta(days=366)
 
-def isAllEqual(array):
-    '''
-    Checks if every value in the input array is equal.
-    '''
-    first = array[0]
-    equal = [i for i in array if i == first]
-
-    return len(equal) == len(array)
-
 def compareUV(data):
     '''
     Does a comprehensive validation process between modeled and observed
@@ -71,18 +62,6 @@ def compareUV(data):
 
 	pred_uv = ut_reconstr(obs_time, mod_harm)
 	pred_uv = np.asarray(pred_uv)
-
-	retries = 0
-
-	# check if ut_reconstr worked
-	while (isAllEqual(pred_uv[0]) and (retries < 10)):
-	    pred_uv = ut_reconstr(obs_time, mod_harm)
-	    pred_uv = np.asarray(pred_uv)
-
-	    print "ut_reconstr failed! Let's do it again."
-	    retries += 1
-
-	print 'ut_reconstr finally worked!'
 
 	# redo speed and direction and set interpolated variables
 	mod_sp_int = np.sqrt(pred_uv[0]**2 + pred_uv[1]**2)
@@ -128,6 +107,9 @@ def compareUV(data):
     # get best phase
     speed_suite['phase'] = speed_stats.getPhase(debug=False)
     dir_suite['phase'] = dir_stats.getPhase(debug=False)
+
+    # test alt phase
+    print speed_suite['phase'], speed_stats.altPhase()
 
     # output statistics in useful format
 #    return (elev_suite, speed_suite, dir_suite)

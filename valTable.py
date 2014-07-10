@@ -60,5 +60,3 @@ def valTable(filename):
 	out_file = '{}_val.csv'.format(run)
 	table.to_csv(out_file)
 
-file = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct.pkl'
-valTable(file)

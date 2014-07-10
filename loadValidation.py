@@ -19,8 +19,9 @@ def loadValidation():
     '''
 
     # load pickle file
-    filename = '/array/home/rkarsten/common_tidal_files/python/wesleyCode/generalRunFiles/structTest2.p'
+    #filename = '/array/home/rkarsten/common_tidal_files/python/wesleyCode/generalRunFiles/structTest2.p'
     #filename = '/array/home/107002b/github/karsten/generalRunFiles/structStationTest.p'
+    filename = '/EcoII/github/wesCode/generalRunFiles/structBottomFric.p'
     struct_f = open(filename, 'rb')
     struct = pickle.load(struct_f)
 
