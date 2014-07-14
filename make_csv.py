@@ -10,6 +10,6 @@ loadValidation()
 valTable(path)
 
 # load in .csv file as command line arg and print it out
-csv_file = '{}_val.csv'.format(sys.argv[1])
+csv_file = 'valTables/{}_val.csv'.format(sys.argv[1])
 table = pd.DataFrame.from_csv(csv_file)
 print table

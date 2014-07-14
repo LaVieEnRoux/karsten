@@ -57,6 +57,6 @@ def valTable(filename):
 			     columns=val_dict.keys())
 
 	# export as .csv file
-	out_file = '{}_val.csv'.format(run)
+	out_file = 'valTables/{}_val.csv'.format(run)
 	table.to_csv(out_file)
 

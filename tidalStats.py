@@ -17,7 +17,7 @@ class TidalStats:
     time step between points, and the start time of the data.
 
     To remove NaNs in observed data, linear interpolation is performed to
-    fill gaps.
+    fill gaps. Additionally, NaNs are trimmed from the start and end.
 
     Functions are used to calculate statistics and to output
     visualizations and tables.
@@ -28,8 +28,17 @@ class TidalStats:
         self.observed = np.asarray(observed_data)
         self.observed = self.observed.astype(np.float64)
 
+	# trim nans at start and end of data
+	start_index, end_index = 0, self.observed.size - 1
+	while np.isnan(self.observed[start_index]):
+	    start_index += 1
+	while np.isnan(self.observed[end_index]):
+	    end_index -= 1
+	self.model = self.model[start_index:end_index]
+	self.observed = self.observed[start_index:end_index]
+
         # set up array of datetimes corresponding to the data (and timestamps)
-        self.times = start_time + np.arange(model_data.size) * time_step
+        self.times = start_time + np.arange(self.model.size) * time_step
         self.step = time_step
         timestamps = np.zeros(len(self.times))
         for j, jj in enumerate(self.times):
@@ -364,10 +373,12 @@ class TidalStats:
 
         return data
 
-    def plotRegression(self, lr):
+    def plotRegression(self, lr, save=False, out_f=''):
         '''
         Plots a visualization of the output from linear regression,
         including confidence intervals for predictands and slope.
+
+	If save is set to True, exports the plot as an image file to out_f.
         '''
         plt.scatter(self.model, self.observed, c='b', marker='+', alpha=0.5)
 
@@ -410,17 +421,21 @@ class TidalStats:
 
 	r_string = 'R Squared: {}'.format(lr['r_2'])
 	plt.text(mod_max - 2, 0, r_string)
-	plt.show()
 
-	#plt.savefig('/array/home/rkarsten/common_tidal_files/python/jonCode/regressionPlot.png')
+	if save:
+	    plt.savefig(out_f)
+	else:
+	    plt.show()
 
-    def plotData(self, graph='time'):
+    def plotData(self, graph='time', save=False, out_f=''):
         '''
         Provides a visualization of the data.
 
         Takes an option which determines the type of graph to be made.
         time: plots the model data against the observed data over time
         scatter : plots the model data vs. observed data
+
+	If save is set to True, saves the image file in out_f.
         '''
         if (graph == 'time'):
             plt.plot(self.times, self.model, label='Model Predictions')
@@ -429,11 +444,14 @@ class TidalStats:
             plt.xlabel('Time')
             plt.ylabel('Tidal Height')
             plt.title('Tidal Heights: Predicted and Observed')
-            plt.show()
 
         if (graph == 'scatter'):
             plt.scatter(self.model, self.observed, c='b', alpha=0.5)
             plt.xlabel('Predicted Height')
             plt.ylabel('Observed Height')
             plt.title('Tidal Heights')
-            plt.show()
+
+	if save:
+	    plt.savefig(out_f)
+	else:
+	    plt.show()	

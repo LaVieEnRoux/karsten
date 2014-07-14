@@ -108,8 +108,7 @@ def compareUV(data):
     speed_suite['phase'] = speed_stats.getPhase(debug=False)
     dir_suite['phase'] = dir_stats.getPhase(debug=False)
 
-    # test alt phase
-    print speed_suite['phase'], speed_stats.altPhase()
+    speed_stats.plotData()
 
     # output statistics in useful format
 #    return (elev_suite, speed_suite, dir_suite)
@@ -171,5 +170,7 @@ def compareTG(data, site):
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
     elev_suite['phase'] = stats.getPhase(debug=False)
+
+    stats.plotData()
 
     return elev_suite
