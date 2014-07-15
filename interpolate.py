@@ -4,7 +4,7 @@ from datetime import timedelta
 import time
 
 
-def interpol(data_1, data_2, time_step=timedelta(minutes=10)):
+def interpol(data_1, data_2, time_step=timedelta(minutes=5)):
     '''
     Interpolates between two datasets so their points line up in the time
     domain.

@@ -22,7 +22,8 @@ class TidalStats:
     Functions are used to calculate statistics and to output
     visualizations and tables.
     '''
-    def __init__(self, model_data, observed_data, time_step, start_time):
+    def __init__(self, model_data, observed_data, time_step, start_time,
+		 debug=False):
         self.model = np.asarray(model_data)
         self.model = self.model.astype(np.float64)
         self.observed = np.asarray(observed_data)
@@ -257,7 +258,7 @@ class TidalStats:
 	lag = time_shift * step_sec / 60
 	return lag
 
-    def getStats(self):
+    def getStats(self, debug=False):
         '''
         Returns each of the statistics in a dictionary.
         '''
@@ -271,6 +272,7 @@ class TidalStats:
         stats['MDPO'] = self.getMDPO()
         stats['MDNO'] = self.getMDNO()
         stats['skill'] = self.getWillmott()
+	stats['phase'] = self.getPhase(debug=debug)
 
         return stats
 
@@ -389,7 +391,7 @@ class TidalStats:
         lower_intercept = lr['intercept'] - lr['pred_CI_width']
         plt.plot([mod_min, mod_max], [mod_min * lr['slope'] + lr['intercept'],
 				      mod_max * lr['slope'] + lr['intercept']],
-                 color='k', linestyle='-', linewidth=2)
+                 color='k', linestyle='-', linewidth=2, label='Linear fit')
 
         # plot CI's for slope
         plt.plot([mod_min, mod_max],
@@ -399,7 +401,7 @@ class TidalStats:
         plt.plot([mod_min, mod_max],
 		 [mod_min * lr['slope_CI'][1] + lr['intercept_CI'][1],
                   mod_max * lr['slope_CI'][1] + lr['intercept_CI'][1]],
-                 color='r', linestyle='--', linewidth=2)
+                 color='r', linestyle='--', linewidth=2, label='Slope CI')
 
         # plot CI's for predictands
         plt.plot([mod_min, mod_max],
@@ -409,15 +411,16 @@ class TidalStats:
         plt.plot([mod_min, mod_max],
 		 [mod_min * lr['slope'] + lower_intercept,
                   mod_max * lr['slope'] + lower_intercept],
-                 color='g', linestyle='--', linewidth=2)
+                 color='g', linestyle='--', linewidth=2, label='Predictand CI')
 
 	# plot y=x for comparison
-	plt.plot([mod_min, mod_min], [mod_max, mod_max], color='k',
-		 linewidth=1)
+	plt.plot([mod_min, mod_min], [mod_max, mod_max], color='b',
+		 linewidth=2, label='y=x')
 
         plt.xlabel('Modeled Data')
         plt.ylabel('Observed Data')
         plt.title('Modeled vs. Observed: Linear Fit')
+	plt.legend(loc='lower right', shadow=True)
 
 	r_string = 'R Squared: {}'.format(lr['r_2'])
 	plt.text(mod_max - 2, 0, r_string)
@@ -442,14 +445,15 @@ class TidalStats:
             plt.plot(self.times, self.observed, color='r',
                      label='Observed Data')
             plt.xlabel('Time')
-            plt.ylabel('Tidal Height')
-            plt.title('Tidal Heights: Predicted and Observed')
+            plt.ylabel('Value')
+            plt.title('Predicted and Observed')
+	    plt.legend(shadow=True)
 
         if (graph == 'scatter'):
             plt.scatter(self.model, self.observed, c='b', alpha=0.5)
             plt.xlabel('Predicted Height')
             plt.ylabel('Observed Height')
-            plt.title('Tidal Heights')
+            plt.title('Predicted vs. Observed')
 
 	if save:
 	    plt.savefig(out_f)

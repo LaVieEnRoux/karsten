@@ -1,6 +1,7 @@
 import numpy as np
 from tidalStats import TidalStats
-from interpolate import interpol
+#from interpolate import interpol
+from smooth import smooth
 from datetime import datetime, timedelta
 from utide import ut_reconstr
 
@@ -40,8 +41,8 @@ def compareUV(data):
     mod_v = data['mod_timeseries']['va']
     obs_u = data['obs_timeseries']['u']
     obs_v = data['obs_timeseries']['v']
-    mod_harm = data['speed_mod_harmonics']
-    obs_harm = data['speed_obs_harmonics']
+    mod_harm = data['vel_mod_harmonics']
+    obs_harm = data['vel_obs_harmonics']
 
     # convert times to datetime
     mod_dt, obs_dt = [], []
@@ -54,8 +55,8 @@ def compareUV(data):
     # put u v velocities into a useful format
     mod_spd = np.sqrt(mod_u**2 + mod_v**2)
     obs_spd = np.sqrt(obs_u**2 + obs_v**2)
-    mod_dir = np.arctan(mod_v / mod_u)
-    obs_dir = np.arctan(obs_v / obs_u)
+    mod_dir = np.arctan2(mod_v, mod_u) * 180 / np.pi
+    obs_dir = np.arctan2(obs_v, obs_u) * 180 / np.pi
 
     # check if the modeled data lines up with the observed data
     if (mod_time[-1] < obs_time[0] or obs_time[-1] < mod_time[0]):
@@ -65,7 +66,7 @@ def compareUV(data):
 
 	# redo speed and direction and set interpolated variables
 	mod_sp_int = np.sqrt(pred_uv[0]**2 + pred_uv[1]**2)
-	mod_dr_int = np.arctan(pred_uv[0] / pred_uv[1])
+	mod_dr_int = np.arctan2(pred_uv[0], pred_uv[1]) * 180 / np.pi
 	obs_sp_int = obs_spd
 	obs_dr_int = obs_dir
 	step_int = obs_dt[1] - obs_dt[0]
@@ -81,12 +82,12 @@ def compareUV(data):
         mod_sp_d = loadDict(mod_spd, mod_dt)
         obs_sp_d = loadDict(obs_spd, obs_dt)
         (mod_sp_int, obs_sp_int, step_int, start_int) = \
-            interpol(mod_sp_d, obs_sp_d)
+            smooth(mod_sp_d, obs_sp_d)
 
         mod_dr_d = loadDict(mod_dir, mod_dt)
         obs_dr_d = loadDict(obs_dir, obs_dt)
         (mod_dr_int, obs_dr_int, step_int, start_int) = \
-            interpol(mod_dr_d, obs_dr_d)
+            smooth(mod_dr_d, obs_dr_d)
 
     # set up the comparison classes for each type of data
 #    elev_stats = TidalStats(mod_el_int, obs_el_int, step_int, start_int)
@@ -108,7 +109,10 @@ def compareUV(data):
     speed_suite['phase'] = speed_stats.getPhase(debug=False)
     dir_suite['phase'] = dir_stats.getPhase(debug=False)
 
-    speed_stats.plotData()
+    speed_stats.plotData(save=False, 
+			 out_f='plots/{}_speeds.png'.format(data['name']))
+    dir_stats.plotData(save=False,
+		       out_f='plots/{}_dir.png'.format(data['name']))
 
     # output statistics in useful format
 #    return (elev_suite, speed_suite, dir_suite)

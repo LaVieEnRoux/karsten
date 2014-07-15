@@ -19,10 +19,11 @@ def loadValidation():
     '''
 
     # load pickle file
-    #filename = '/array/home/rkarsten/common_tidal_files/python/wesleyCode/generalRunFiles/structTest2.p'
-    #filename = '/array/home/107002b/github/karsten/generalRunFiles/structStationTest.p'
-    #filename = '/EcoII/github/wesCode/generalRunFiles/structBottomFric.p'
-    filename = '/array/home/116822s/2012_run/struct2012_run.p'
+    filename = '/array/home/rkarsten/common_tidal_files/python/wesleyCode/generalRunFiles/structTest2.p'
+    filename = '/array/home/107002b/github/karsten/generalRunFiles/structStationTest.p'
+    filename = '/EcoII/github/wesCode/generalRunFiles/structBottomFric.p'
+    #filename = '/array/home/116822s/2012_run/struct2012_run.p'
+    filename = '/EcoII/github/wesCode/project/june_2013_3D_station.p'
     struct_f = open(filename, 'rb')
     struct = pickle.load(struct_f)
 
@@ -48,5 +49,3 @@ def loadValidation():
     #filename_out = '/array/home/rkarsten/common_tidal_files/python/jonCode/val_struct_3D.pkl'
     out_f = open(filename_out, 'wb')
     pickle.dump(struct, out_f)
-
-loadValidation()
