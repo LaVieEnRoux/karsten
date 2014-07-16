@@ -48,6 +48,57 @@ def valTable(filename):
 	    r2.append(stats['r_squared'])
 	    phase.append(stats['phase'])
 
+	for site in struct[run]:
+
+            # check if it's a tidegauge site
+            if ('obs_time' in site.keys()):
+                stats = site['elev_val']
+                type.append('Elev')
+                name.append(site['name'])
+
+            else:
+                stats = site['dg_elev_val']
+                type.append('Elevation')
+                name.append('TG{}'.format(num_tg))
+                num_tg += 1
+
+            RMSE.append(stats['RMSE'])
+            CF.append(stats['CF'])
+            SD.append(stats['SD'])
+            POF.append(stats['POF'])
+            NOF.append(stats['NOF'])
+            MDPO.append(stats['MDPO'])
+            MDNO.append(stats['MDNO'])
+            skill.append(stats['skill'])
+            r2.append(stats['r_squared'])
+            phase.append(stats['phase'])
+
+	for site in struct[run]:
+
+            # check if it's a tidegauge site
+            if ('obs_time' in site.keys()):
+                stats = site['dir_val']
+                type.append('Direction')
+                name.append(site['name'])
+
+            else:
+                stats = site['dg_elev_val']
+                type.append('Elevation')
+                name.append('TG{}'.format(num_tg))
+                num_tg += 1
+
+            RMSE.append(stats['RMSE'])
+            CF.append(stats['CF'])
+            SD.append(stats['SD'])
+            POF.append(stats['POF'])
+            NOF.append(stats['NOF'])
+            MDPO.append(stats['MDPO'])
+            MDNO.append(stats['MDNO'])
+            skill.append(stats['skill'])
+            r2.append(stats['r_squared'])
+            phase.append(stats['phase'])
+
+
 	# put stats into dict and create dataframe
 	val_dict = {'Type':type, 'RMSE':RMSE, 'CF':CF, 'SD':SD, 'POF':POF,
 		    'NOF':NOF, 'MDPO':MDPO, 'MDNO':MDNO,  'skill':skill,

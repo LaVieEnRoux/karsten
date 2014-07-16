@@ -35,7 +35,8 @@ def loadValidation():
 
     	    # check if site is a tidegauge site
     	    if ('obs_time' in site.keys()):
-    	        (speed_suite, dir_suite) = compareUV(site)
+    	        (elev_suite, speed_suite, dir_suite) = compareUV(site)
+		site['elev_val'] = elev_suite
     	        site['speed_val'] = speed_suite
     	        site['dir_val'] = dir_suite
 

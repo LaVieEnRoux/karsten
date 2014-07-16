@@ -39,10 +39,14 @@ def compareUV(data):
     obs_time = data['obs_time']
     mod_u = data['mod_timeseries']['ua']
     mod_v = data['mod_timeseries']['va']
+    mod_el = data['mod_timeseries']['elev']
     obs_u = data['obs_timeseries']['u']
     obs_v = data['obs_timeseries']['v']
-    mod_harm = data['vel_mod_harmonics']
-    obs_harm = data['vel_obs_harmonics']
+    obs_el = data['obs_timeseries']['elev']
+    v_mod_harm = data['vel_mod_harmonics']
+    v_obs_harm = data['vel_obs_harmonics']
+    el_mod_harm = data['elev_mod_harmonics']
+    el_obs_harm = data['elev_mod_harmonics']
 
     # convert times to datetime
     mod_dt, obs_dt = [], []
@@ -51,33 +55,37 @@ def compareUV(data):
     for j in obs_time:
 	obs_dt.append(dn2dt(j))
 
-    #import pdb; pdb.set_trace()
-    # put u v velocities into a useful format
+    # put data into a useful format
     mod_spd = np.sqrt(mod_u**2 + mod_v**2)
     obs_spd = np.sqrt(obs_u**2 + obs_v**2)
     mod_dir = np.arctan2(mod_v, mod_u) * 180 / np.pi
     obs_dir = np.arctan2(obs_v, obs_u) * 180 / np.pi
+    obs_el = obs_el - np.mean(obs_el)
 
     # check if the modeled data lines up with the observed data
     if (mod_time[-1] < obs_time[0] or obs_time[-1] < mod_time[0]):
 
-	pred_uv = ut_reconstr(obs_time, mod_harm)
+	pred_uv = ut_reconstr(obs_time, v_mod_harm)
 	pred_uv = np.asarray(pred_uv)
+	pred_h = ut_reconstr(obs_time, el_mod_harm)
+	pred_h = np.asarray(pred_h)
 
 	# redo speed and direction and set interpolated variables
 	mod_sp_int = np.sqrt(pred_uv[0]**2 + pred_uv[1]**2)
 	mod_dr_int = np.arctan2(pred_uv[0], pred_uv[1]) * 180 / np.pi
+	mod_el_int = pred_h
 	obs_sp_int = obs_spd
 	obs_dr_int = obs_dir
+	obs_el_int = obs_el
 	step_int = obs_dt[1] - obs_dt[0]
 	start_int = obs_dt[0]
 
     else:
         # interpolate the data onto a common time step for each data type
-#        mod_el_d = loadDict(mod_el, mod_step, mod_time[0], mod_time[-1])
-#        obs_el_d = loadDict(obs_el, obs_step, obs_time[0], obs_time[-1])
-#        (mod_el_int, obs_el_int, step_int, start_int) = \
-#            interpol(mod_el_d, obs_el_d)
+        mod_el_d = loadDict(mod_el, mod_dt)
+        obs_el_d = loadDict(obs_el, obs_dt)
+        (mod_el_int, obs_el_int, step_int, start_int) = \
+            smooth(mod_el_d, obs_el_d)
 
         mod_sp_d = loadDict(mod_spd, mod_dt)
         obs_sp_d = loadDict(obs_spd, obs_dt)
@@ -89,34 +97,47 @@ def compareUV(data):
         (mod_dr_int, obs_dr_int, step_int, start_int) = \
             smooth(mod_dr_d, obs_dr_d)
 
-    # set up the comparison classes for each type of data
-#    elev_stats = TidalStats(mod_el_int, obs_el_int, step_int, start_int)
-    speed_stats = TidalStats(mod_sp_int, obs_sp_int, step_int, start_int)
-    dir_stats = TidalStats(mod_dr_int, obs_dr_int, step_int, start_int)
+    # remove directions where velocities are small
+    MIN_VEL = 0.5
+    for i in np.arange(obs_sp_int.size):
+ 	if (obs_sp_int[i] < MIN_VEL):
+	    obs_dr_int[i] = np.nan
+	if (mod_sp_int[i] < MIN_VEL):
+	    mod_dr_int[i] = np.nan
 
+    # set up the comparison classes for each type of data
+    elev_stats = TidalStats(mod_el_int, obs_el_int, step_int, start_int,
+			    type='height')
+    speed_stats = TidalStats(mod_sp_int, obs_sp_int, step_int, start_int,
+			     type='speed')
+    dir_stats = TidalStats(mod_dr_int, obs_dr_int, step_int, start_int,
+			   type='direction')
 
     # obtain necessary statistics
-#    elev_suite = elev_stats.getStats()
+    elev_suite = elev_stats.getStats()
     speed_suite = speed_stats.getStats()
     dir_suite = dir_stats.getStats()
 
     # do some linear regression
-#    elev_suite['r_squared'] = elev_stats.linReg()['r_2']
+    elev_suite['r_squared'] = elev_stats.linReg()['r_2']
     speed_suite['r_squared'] = speed_stats.linReg()['r_2']
     dir_suite['r_squared'] = dir_stats.linReg()['r_2']
 
     # get best phase
-    speed_suite['phase'] = speed_stats.getPhase(debug=False)
-    dir_suite['phase'] = dir_stats.getPhase(debug=False)
+    elev_suite['phase'] = elev_stats.getPhase()
+    speed_suite['phase'] = speed_stats.getPhase()
+    dir_suite['phase'] = dir_stats.getPhase()
 
-    speed_stats.plotData(save=False, 
-			 out_f='plots/{}_speeds.png'.format(data['name']))
-    dir_stats.plotData(save=False,
-		       out_f='plots/{}_dir.png'.format(data['name']))
+    # make plots
+    elev_stats.plotData()
+    elev_stats.plotRegression(elev_stats.linReg())
+    speed_stats.plotData() 
+    speed_stats.plotRegression(speed_stats.linReg())
+    dir_stats.plotData()
+    dir_stats.plotRegression(dir_stats.linReg())
 
     # output statistics in useful format
-#    return (elev_suite, speed_suite, dir_suite)
-    return (speed_suite, dir_suite)
+    return (elev_suite, speed_suite, dir_suite)
 
 def compareTG(data, site):
     '''
@@ -170,7 +191,8 @@ def compareTG(data, site):
 
 
     # get validation statistics
-    stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int)
+    stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int,
+		       type='height')
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
     elev_suite['phase'] = stats.getPhase(debug=False)

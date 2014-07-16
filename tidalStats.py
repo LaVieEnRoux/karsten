@@ -23,7 +23,7 @@ class TidalStats:
     visualizations and tables.
     '''
     def __init__(self, model_data, observed_data, time_step, start_time,
-		 debug=False):
+		 debug=False, type=''):
         self.model = np.asarray(model_data)
         self.model = self.model.astype(np.float64)
         self.observed = np.asarray(observed_data)
@@ -45,19 +45,31 @@ class TidalStats:
         for j, jj in enumerate(self.times):
             timestamps[j] = time.mktime(jj.timetuple())
 
-	# uses linear interpolation to eliminate any NaNs in the observed data
+	# uses linear interpolation to eliminate any NaNs in the data
 	if (True in np.isnan(self.observed)):
 	    obs_nonan = self.observed[np.where(~np.isnan(self.observed))[0]]
 	    time_nonan = timestamps[np.where(~np.isnan(self.observed))[0]]
 	    func = interp1d(time_nonan, obs_nonan)
 	    self.observed = func(timestamps)
+	if (True in np.isnan(self.model)):
+	    mod_nonan = self.model[np.where(~np.isnan(self.model))[0]]
+	    time_nonan = timestamps[np.where(~np.isnan(self.model))[0]]
+	    func = interp1d(time_nonan, mod_nonan)
+	    self.model = func(timestamps)
 
 	self.error = self.observed - self.model
 	self.length = self.error.size
+	self.type = type
 
     # establish limits as defined by NOAA standard
-    MDO_MAX = 1440
-    ERROR_BOUND = 0.5
+    if (type == 'speed'):
+        ERROR_BOUND = 0.26
+    elif (type == 'height'):
+	ERROR_BOUND = 0.15
+    elif (type == 'direction'):
+	ERROR_BOUND = 22.5 
+    else:
+	ERROR_BOUND = 0.5
 
     def getRMSE(self):
         '''
@@ -419,11 +431,11 @@ class TidalStats:
 
         plt.xlabel('Modeled Data')
         plt.ylabel('Observed Data')
-        plt.title('Modeled vs. Observed: Linear Fit')
+        plt.suptitle('Modeled vs. Observed {}: Linear Fit'.format(self.type))
 	plt.legend(loc='lower right', shadow=True)
 
-	r_string = 'R Squared: {}'.format(lr['r_2'])
-	plt.text(mod_max - 2, 0, r_string)
+	r_string = 'R Squared: {}'.format(np.around(lr['r_2'], decimals=3))
+	plt.title(r_string)
 
 	if save:
 	    plt.savefig(out_f)
@@ -446,14 +458,14 @@ class TidalStats:
                      label='Observed Data')
             plt.xlabel('Time')
             plt.ylabel('Value')
-            plt.title('Predicted and Observed')
+            plt.title('Predicted and Observed {}'.format(self.type))
 	    plt.legend(shadow=True)
 
         if (graph == 'scatter'):
             plt.scatter(self.model, self.observed, c='b', alpha=0.5)
             plt.xlabel('Predicted Height')
             plt.ylabel('Observed Height')
-            plt.title('Predicted vs. Observed')
+            plt.title('Predicted vs. Observed {}'.format(self.type))
 
 	if save:
 	    plt.savefig(out_f)

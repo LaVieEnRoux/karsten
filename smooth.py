@@ -41,19 +41,15 @@ def smooth(data_1, data_2, time_step=timedelta(minutes=5)):
     for i in np.arange(steps):
         start_buf = start + step_sec * i
         end_buf = start + step_sec * (i + 1)
-        buf_1 = times_1[(times_1 >= start_buf) &
-                        (times_1 < end_buf)]
-        buf_2 = times_2[(times_2 >= start_buf) &
-                        (times_2 < end_buf)]
 
-        # iterate through buffers to find corresponding data values
-        data_buf_1, data_buf_2 = [], []
-        for j, k in enumerate(buf_1):
-            index = np.where(times_1 == k)[0][0]
-            data_buf_1.append(data_1['pts'][index])
-        for j, k in enumerate(buf_2):
-            index = np.where(times_2 == k)[0][0]
-            data_buf_2.append(data_2['pts'][index])
+	buf_1 = np.where((times_1 >= start_buf) & (times_1 < end_buf))[0]
+	buf_2 = np.where((times_2 >= start_buf) & (times_2 < end_buf))[0]	
+
+	data_buf_1 = data_1['pts'][buf_1]
+	data_buf_2 = data_2['pts'][buf_2]
+
+	if (i % 500 == 0):
+	    print 'Currently smoothing at step {} / {}'.format(i, steps)
 
         # calculate mean of data subsets (in the buffers)
 	if (len(data_buf_1) != 0):
@@ -65,4 +61,6 @@ def smooth(data_1, data_2, time_step=timedelta(minutes=5)):
 	else:
 	    series_2[i] = np.nan
 
-    return (series_1, series_2, time_step, start)
+	dt_start = max(dt_1[0], dt_2[0])
+
+    return (series_1, series_2, time_step, dt_start)
