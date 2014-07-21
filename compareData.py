@@ -5,17 +5,6 @@ from smooth import smooth
 from datetime import datetime, timedelta
 from utide import ut_reconstr
 
-def loadDict(pts, time):
-    '''
-    Loads data into a dictionary for input into smooth and interpolate
-    functions.
-    '''
-    out_d = {}
-    out_d['pts'] = pts
-    out_d['time'] = time
-
-    return out_d
-
 def dn2dt(datenum):
     '''
     Convert matlab datenum to python datetime.
@@ -72,30 +61,45 @@ def compareUV(data):
 
 	# redo speed and direction and set interpolated variables
 	mod_sp_int = np.sqrt(pred_uv[0]**2 + pred_uv[1]**2)
+	mod_ssp_int = mod_sp_int * np.sign(pred_uv[1])
 	mod_dr_int = np.arctan2(pred_uv[0], pred_uv[1]) * 180 / np.pi
 	mod_el_int = pred_h
+	mod_u_int = pred_uv[0]
+	mod_v_int = pred_uv[1]
 	obs_sp_int = obs_spd
 	obs_dr_int = obs_dir
 	obs_el_int = obs_el
+	obs_u_int = obs_u
+	obs_v_int = obs_v
 	step_int = obs_dt[1] - obs_dt[0]
 	start_int = obs_dt[0]
 
     else:
         # interpolate the data onto a common time step for each data type
-        mod_el_d = loadDict(mod_el, mod_dt)
-        obs_el_d = loadDict(obs_el, obs_dt)
+	# elevation
         (mod_el_int, obs_el_int, step_int, start_int) = \
-            smooth(mod_el_d, obs_el_d)
+	    smooth(mod_el, mod_dt, obs_el, obs_dt)
 
-        mod_sp_d = loadDict(mod_spd, mod_dt)
-        obs_sp_d = loadDict(obs_spd, obs_dt)
+	# speed
         (mod_sp_int, obs_sp_int, step_int, start_int) = \
-            smooth(mod_sp_d, obs_sp_d)
+            smooth(mod_spd, mod_dt, obs_spd, obs_dt)
 
-        mod_dr_d = loadDict(mod_dir, mod_dt)
-        obs_dr_d = loadDict(obs_dir, obs_dt)
+	# direction
         (mod_dr_int, obs_dr_int, step_int, start_int) = \
-            smooth(mod_dr_d, obs_dr_d)
+            smooth(mod_dir, mod_dt, obs_dir, obs_dt)
+
+	# u velocity
+	(mod_u_int, obs_u_int, step_int, start_int) = \
+	    smooth(mod_u, mod_dt, obs_u, obs_dt)
+
+	# v velocity
+	(mod_v_int, obs_v_int, step_int, start_int) = \
+	    smooth(mod_v, mod_dt, obs_v, obs_dt)
+
+	# velocity i.e. signed speed
+	(mod_ve_int, obs_ve_int, step_int, start_int) = \
+	    smooth(mod_spd * np.sign(mod_v), mod_dt, 
+		   obs_spd * np.sign(obs_v), obs_dt)
 
     # remove directions where velocities are small
     MIN_VEL = 0.5
@@ -105,39 +109,44 @@ def compareUV(data):
 	if (mod_sp_int[i] < MIN_VEL):
 	    mod_dr_int[i] = np.nan
 
-    # set up the comparison classes for each type of data
-    elev_stats = TidalStats(mod_el_int, obs_el_int, step_int, start_int,
-			    type='height')
-    speed_stats = TidalStats(mod_sp_int, obs_sp_int, step_int, start_int,
-			     type='speed')
-    dir_stats = TidalStats(mod_dr_int, obs_dr_int, step_int, start_int,
-			   type='direction')
-
-    # obtain necessary statistics
-    elev_suite = elev_stats.getStats()
-    speed_suite = speed_stats.getStats()
-    dir_suite = dir_stats.getStats()
-
-    # do some linear regression
-    elev_suite['r_squared'] = elev_stats.linReg()['r_2']
-    speed_suite['r_squared'] = speed_stats.linReg()['r_2']
-    dir_suite['r_squared'] = dir_stats.linReg()['r_2']
-
-    # get best phase
-    elev_suite['phase'] = elev_stats.getPhase()
-    speed_suite['phase'] = speed_stats.getPhase()
-    dir_suite['phase'] = dir_stats.getPhase()
-
-    # make plots
-    elev_stats.plotData()
-    elev_stats.plotRegression(elev_stats.linReg())
-    speed_stats.plotData() 
-    speed_stats.plotRegression(speed_stats.linReg())
-    dir_stats.plotData()
-    dir_stats.plotRegression(dir_stats.linReg())
+    # get stats for each tidal variable
+    elev_suite = tidalSuite(mod_el_int, obs_el_int, step_int, start_int,
+			    type='elevation')
+    speed_suite = tidalSuite(mod_sp_int, obs_sp_int, step_int, start_int,
+			    type='speed')
+    dir_suite = tidalSuite(mod_dr_int, obs_dr_int, step_int, start_int,
+			    type='direction')
+    u_suite = tidalSuite(mod_u_int, obs_u_int, step_int, start_int,
+			    type='u velocity')
+    v_suite = tidalSuite(mod_v_int, obs_v_int, step_int, start_int,
+			    type='v velocity')
+    vel_suite = tidalSuite(mod_ve_int, obs_ve_int, step_int, start_int,
+			    type='velocity')
 
     # output statistics in useful format
-    return (elev_suite, speed_suite, dir_suite)
+    return (elev_suite, speed_suite, dir_suite, u_suite, v_suite, vel_suite)
+
+def tidalSuite(model, observed, step, start, type, 
+		  plot=False):
+    '''
+    Create stats classes for a given tidal variable.
+
+    Accepts interpolated model and observed data, the timestep, and start
+    time. Type is a string representing the type of data. If plot is set
+    to true, a time plot and regression plot will be produced.
+    
+    Returns a dictionary containing all the stats.
+    '''
+    stats = TidalStats(model, observed, step, start, type=type)
+    stats_suite = stats.getStats()
+    stats_suite['r_squared'] = stats.linReg()['r_2']
+    stats_suite['phase'] = stats.getPhase()
+
+    if plot:
+	stats.plotData()
+	stats.plotRegression(stats.linReg())
+
+    return stats_suite
 
 def compareTG(data, site):
     '''

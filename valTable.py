@@ -22,82 +22,25 @@ def valTable(filename):
 	[], [], [], [], [], [], [], [], [], [], [], []
 	num_tg = 1
 
-	# iterate through sites and get validation stats
-	for site in struct[run]:
-
-	    # check if it's a tidegauge site
-	    if ('obs_time' in site.keys()):
-		stats = site['speed_val']
-		type.append('Speed')
-		name.append(site['name'])
-
-	    else:
-		stats = site['dg_elev_val']
-		type.append('Elevation')
-		name.append('TG{}'.format(num_tg))
-		num_tg += 1
-
-	    RMSE.append(stats['RMSE'])
-	    CF.append(stats['CF'])
-	    SD.append(stats['SD'])
-	    POF.append(stats['POF'])
-	    NOF.append(stats['NOF'])
-	    MDPO.append(stats['MDPO'])
-	    MDNO.append(stats['MDNO'])
-	    skill.append(stats['skill'])
-	    r2.append(stats['r_squared'])
-	    phase.append(stats['phase'])
-
-	for site in struct[run]:
-
-            # check if it's a tidegauge site
-            if ('obs_time' in site.keys()):
-                stats = site['elev_val']
-                type.append('Elev')
-                name.append(site['name'])
-
-            else:
-                stats = site['dg_elev_val']
-                type.append('Elevation')
-                name.append('TG{}'.format(num_tg))
-                num_tg += 1
-
-            RMSE.append(stats['RMSE'])
-            CF.append(stats['CF'])
-            SD.append(stats['SD'])
-            POF.append(stats['POF'])
-            NOF.append(stats['NOF'])
-            MDPO.append(stats['MDPO'])
-            MDNO.append(stats['MDNO'])
-            skill.append(stats['skill'])
-            r2.append(stats['r_squared'])
-            phase.append(stats['phase'])
-
-	for site in struct[run]:
-
-            # check if it's a tidegauge site
-            if ('obs_time' in site.keys()):
-                stats = site['dir_val']
-                type.append('Direction')
-                name.append(site['name'])
-
-            else:
-                stats = site['dg_elev_val']
-                type.append('Elevation')
-                name.append('TG{}'.format(num_tg))
-                num_tg += 1
-
-            RMSE.append(stats['RMSE'])
-            CF.append(stats['CF'])
-            SD.append(stats['SD'])
-            POF.append(stats['POF'])
-            NOF.append(stats['NOF'])
-            MDPO.append(stats['MDPO'])
-            MDNO.append(stats['MDNO'])
-            skill.append(stats['skill'])
-            r2.append(stats['r_squared'])
-            phase.append(stats['phase'])
-
+	# append to the lists the stats from each site for each variable
+	(type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase) \
+	    = siteStats(struct[run], 'elev', type, name, RMSE, CF, SD, POF,
+			NOF, MDPO, MDNO, skill, r2, phase)
+        (type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase) \
+            = siteStats(struct[run], 'speed', type, name, RMSE, CF, SD, POF,
+                        NOF, MDPO, MDNO, skill, r2, phase)
+        (type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase) \
+            = siteStats(struct[run], 'dir', type, name, RMSE, CF, SD, POF,
+                        NOF, MDPO, MDNO, skill, r2, phase)
+        (type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase) \
+            = siteStats(struct[run], 'u', type, name, RMSE, CF, SD, POF,
+                        NOF, MDPO, MDNO, skill, r2, phase)
+        (type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase) \
+            = siteStats(struct[run], 'v', type, name, RMSE, CF, SD, POF,
+                        NOF, MDPO, MDNO, skill, r2, phase)
+        (type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase) \
+            = siteStats(struct[run], 'vel', type, name, RMSE, CF, SD, POF,
+                        NOF, MDPO, MDNO, skill, r2, phase)
 
 	# put stats into dict and create dataframe
 	val_dict = {'Type':type, 'RMSE':RMSE, 'CF':CF, 'SD':SD, 'POF':POF,
@@ -111,3 +54,38 @@ def valTable(filename):
 	out_file = 'valTables/{}_val.csv'.format(run)
 	table.to_csv(out_file)
 
+def siteStats(run, variable, type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, 
+	      skill, r2, phase):
+    '''
+    Iterates through the sites for a particular run, and grabs the individual
+    statistics for each site.
+
+    Takes in the run (an array of dictionaries) and the type of the run (a
+    string). Also takes in the list representing each statistic.
+    '''
+    for site in run:
+    
+        # check if it's a tidegauge site
+        if ('obs_time' in site.keys()):
+            stats = site['{}_val'.format(variable)]
+            type.append(variable)
+            name.append(site['name'])
+    
+        else:
+            stats = site['dg_elev_val']
+            type.append('Elevation')
+            name.append('TG{}'.format(num_tg))
+            num_tg += 1
+    
+        RMSE.append(stats['RMSE'])
+        CF.append(stats['CF'])
+        SD.append(stats['SD'])
+        POF.append(stats['POF'])
+        NOF.append(stats['NOF'])
+        MDPO.append(stats['MDPO'])
+        MDNO.append(stats['MDNO'])
+        skill.append(stats['skill'])
+        r2.append(stats['r_squared'])
+        phase.append(stats['phase'])
+
+    return (type, name, RMSE, CF, SD, POF, NOF, MDPO, MDNO, skill, r2, phase)

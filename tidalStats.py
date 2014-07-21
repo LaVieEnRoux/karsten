@@ -61,15 +61,15 @@ class TidalStats:
 	self.length = self.error.size
 	self.type = type
 
-    # establish limits as defined by NOAA standard
-    if (type == 'speed'):
-        ERROR_BOUND = 0.26
-    elif (type == 'height'):
-	ERROR_BOUND = 0.15
-    elif (type == 'direction'):
-	ERROR_BOUND = 22.5 
-    else:
-	ERROR_BOUND = 0.5
+        # establish limits as defined by NOAA standard
+        if (type == 'speed'):
+            self.ERROR_BOUND = 0.26
+        elif (type == 'height'):
+    	    self.ERROR_BOUND = 0.15
+        elif (type == 'direction'):
+    	    self.ERROR_BOUND = 22.5 
+        else:
+    	    self.ERROR_BOUND = 0.5
 
     def getRMSE(self):
         '''

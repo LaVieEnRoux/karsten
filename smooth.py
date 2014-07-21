@@ -2,23 +2,16 @@ from datetime import timedelta
 import numpy as np
 import time
 
-
-def smooth(data_1, data_2, time_step=timedelta(minutes=5)):
+def smooth(data_1, dt_1, data_2, dt_2):
     '''
     Smooths a dataset by taking the average of all datapoints within
     a certain timestep to reduce noise. Lines up two datasets in the
     time domain, as well.
 
-    Accepts two sets of data, each of which are dictionaries containing two
-    values:
-    time- array of datetimes corresponding to the timeseries
-    pts- 1D numpy array containing the data
-
-    Third optional argument sets the time between data points in the output
-    data. Is a timedelta object, defaults to 5 minutes.
+    Accepts four variables representing the data. data_1 and data_2 are the
+    data points, dt_1 and dt_2 are the datetimes corresponding to the points.
     '''
-    dt_1 = data_1['time']
-    dt_2 = data_2['time']
+    time_step = timedelta(minutes=5)
 
     # create POSIX timestamp array corresponding to each dataset
     times_1, times_2 = np.zeros(len(dt_1)), np.zeros(len(dt_2))
@@ -45,10 +38,11 @@ def smooth(data_1, data_2, time_step=timedelta(minutes=5)):
 	buf_1 = np.where((times_1 >= start_buf) & (times_1 < end_buf))[0]
 	buf_2 = np.where((times_2 >= start_buf) & (times_2 < end_buf))[0]	
 
-	data_buf_1 = data_1['pts'][buf_1]
-	data_buf_2 = data_2['pts'][buf_2]
+	data_buf_1 = data_1[buf_1]
+	data_buf_2 = data_2[buf_2]
 
-	if (i % 500 == 0):
+	# communicate progress
+	if (i % 1000 == 0):
 	    print 'Currently smoothing at step {} / {}'.format(i, steps)
 
         # calculate mean of data subsets (in the buffers)
