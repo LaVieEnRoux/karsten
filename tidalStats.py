@@ -38,6 +38,15 @@ class TidalStats:
 	self.model = self.model[start_index:end_index]
 	self.observed = self.observed[start_index:end_index]
 
+	# trim nans in model data too, just in case
+	start_index, end_index = 0, self.model.size - 1
+	while np.isnan(self.model[start_index]):
+	    start_index += 1
+	while np.isnan(self.model[end_index]):
+	    end_index -= 1
+	self.model = self.model[start_index:end_index]
+	self.observed = self.observed[start_index:end_index]
+
         # set up array of datetimes corresponding to the data (and timestamps)
         self.times = start_time + np.arange(self.model.size) * time_step
         self.step = time_step
@@ -62,12 +71,14 @@ class TidalStats:
 	self.type = type
 
         # establish limits as defined by NOAA standard
-        if (type == 'speed'):
+        if (type == 'speed' or type == 'velocity'):
             self.ERROR_BOUND = 0.26
-        elif (type == 'height'):
+        elif (type == 'elevation'):
     	    self.ERROR_BOUND = 0.15
-        elif (type == 'direction'):
-    	    self.ERROR_BOUND = 22.5 
+        elif (type == 'direction' or type == 'ebb' or type == 'flow'):
+    	    self.ERROR_BOUND = 22.5
+	elif (type == 'u velocity' or type == 'v velocity'):
+	    self.ERROR_BOUND = 0.35
         else:
     	    self.ERROR_BOUND = 0.5
 
@@ -214,7 +225,7 @@ class TidalStats:
 	    step = self.times[1] - self.times[0]
 	
 	    # create TidalStats class for shifted data and get the RMSE
-	    stats = TidalStats(shift_mod, shift_obs, step, start)
+	    stats = TidalStats(shift_mod, shift_obs, step, start, type='Phase')
 	    rms_error = stats.getRMSE()
 	    errors.append(rms_error)
 	    
