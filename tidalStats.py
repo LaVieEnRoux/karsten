@@ -77,6 +77,7 @@ class TidalStats:
     	    self.ERROR_BOUND = 0.15
         elif (type == 'direction' or type == 'ebb' or type == 'flow'):
     	    self.ERROR_BOUND = 22.5
+	    print 'correct angular error bound found'
 	elif (type == 'u velocity' or type == 'v velocity'):
 	    self.ERROR_BOUND = 0.35
         else:
@@ -435,10 +436,6 @@ class TidalStats:
 		 [mod_min * lr['slope'] + lower_intercept,
                   mod_max * lr['slope'] + lower_intercept],
                  color='g', linestyle='--', linewidth=2, label='Predictand CI')
-
-	# plot y=x for comparison
-	plt.plot([mod_min, mod_min], [mod_max, mod_max], color='b',
-		 linewidth=2, label='y=x')
 
         plt.xlabel('Modeled Data')
         plt.ylabel('Observed Data')
