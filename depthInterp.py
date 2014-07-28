@@ -1,11 +1,21 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-# ASSUMPTIONS:
-# first dimension of matrices identify the timestep, second the depth
-# column vectors are organized from bottom to top
-# siglay is an array of numbers from 0 to 1 representing percentages
+'''
+ASSUMPTIONS:
+first dimension of matrices identify the timestep, second the depth
+column vectors are organized from bottom to top
+i.e. data[3] is the column at the third timestep
+     data[3][10] is the tenth layer from the bottom at the third timestep
+ADCP bins are the depths of each ADCP layer
+ADCP bin width is constant
+ADCP bin number is constant
+The top ADCP value of any column is no greater than 95% of the total depth
+'''
 
+ADCP_TOP_SURF = 0.95
+NUM_BINS = 20
+BIN_WIDTH = 2
 
 def depthToSigma(obs_data, obs_depth, siglay):
     '''
@@ -16,16 +26,13 @@ def depthToSigma(obs_data, obs_depth, siglay):
     format.
     '''
 
-    ADCP_TOP_SURF = 0.95
-
     sig_obs = np.zeros(obs_data.shape[0], siglay.size)
 
     # loop through columns/steps
     for i, column in enumerate(obs_data):
 
-	col_nonan = column[np.where(~np.isnan(column))[0]]
-
 	# map old depths to between 0 and 1, make interpolation function
+	col_nonan = column[np.where(~np.isnan(column))[0]]
 	old_depths = np.arange(0, obs_depth[i] * ADCP_TOP_SURF, 
 		     1. / col_nonan.size)
 	mapped_depths = old_depths / obs_depth[i]
@@ -36,8 +43,34 @@ def depthToSigma(obs_data, obs_depth, siglay):
 
     return sig_obs
 
-def sigmaToDepth(mod_data, mod_depth, siglay,
-		 obs_data, obs_depth):
+def sigmaToDepth(mod_data, mod_depth, siglay):
+    '''
+    Performs linear interpolation on 3D FVCOM output to change it into the
+    same format as ADCP output (i.e. constant depths, NaNs above surface)
+
+    Outputs a 2D numpy array representing the FVCOM matrix in ADCP format.
+    '''
+
+    bin_mod = np.zeros(mod_data.shape[0], NUM_BINS)
+
+    # loop through columns/steps
+    for i, column in enumerate(mod_data):
+	
+	# create interpolation function
+	f_mod = interp1d(column, siglay)
+	depth = mod_depth[i]
+
+	# loop through bins
+	for j in np.arange(NUM_BINS):
+
+	    # check if location is above ADCP_TOP_SURF
+	    loc = float(BIN_WIDTH * j) / float(depth)
+	    if (loc <= ADCP_TOP_SURF):
+		bin_mod[i][j] = f_mod(loc)
+	    else:
+		bin_mod[i][j] = np.nan
+
+    return bin_mod
 
 def depthFromSurf(mod_data, mod_depth, siglay, 
 		  obs_data, obs_depth, depth=5):
@@ -59,8 +92,6 @@ def depthFromSurf(mod_data, mod_depth, siglay,
     metres from the surface.
     '''
 
-    ADCP_TOP_SURF = 0.95
-
     new_mod = np.zeros(mod_data.shape[0])
     new_obs = np.zeros(obs_data.shape[0])
 
@@ -68,30 +99,24 @@ def depthFromSurf(mod_data, mod_depth, siglay,
     for i, step in enumerate(mod_data):
 
         # create interpolation function
-	f_mod = interp1d(step, siglay) # making some assumptions about siglay here
+	f_mod = interp1d(step, siglay)
 
-	# find location of specified depth
+	# find location of specified depth and perform interpolation
 	location = mod_depth[i] - depth
 	sig_loc = float(location) / float(mod_depth[i])
-
-	# perform interpolation to get new data
 	new_mod[i] = f_mod(sig_loc)
 
     # loop over obs_data columns
     for ii, column in enumerate(obs_data):
 
-	# remove nans at the top
-	col_nonan = column[np.where(~np.isnan(column))[0]]
-
 	# create interpolation function
+	col_nonan = column[np.where(~np.isnan(column))[0]]
 	top_depth = ADCP_TOP_SURF * obs_depth[ii]
 	index = np.arange(0, top_depth, 1. / col_nonan.size)
 	f_obs = interp1d(column, index)
 
-	# find location of specified depth
+	# find location of specified depth and perform interpolation
 	location = obs_depth[ii] - depth
-
-	# perform interpolation to get new data
 	new_obs[i] = f_obs(location)
 
     return (new_mod, new_obs)
