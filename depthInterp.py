@@ -9,13 +9,10 @@ i.e. data[3] is the column at the third timestep
      data[3][10] is the tenth layer from the bottom at the third timestep
 ADCP bins are the depths of each ADCP layer
 ADCP bin width is constant
-ADCP bin number is constant
 The top ADCP value of any column is no greater than 95% of the total depth
 '''
 
 ADCP_TOP_SURF = 0.95
-NUM_BINS = 20
-BIN_WIDTH = 2
 
 def depthToSigma(obs_data, obs_depth, siglay):
     '''
@@ -43,7 +40,7 @@ def depthToSigma(obs_data, obs_depth, siglay):
 
     return sig_obs
 
-def sigmaToDepth(mod_data, mod_depth, siglay):
+def sigmaToDepth(mod_data, mod_depth, siglay, bins):
     '''
     Performs linear interpolation on 3D FVCOM output to change it into the
     same format as ADCP output (i.e. constant depths, NaNs above surface)
@@ -51,7 +48,8 @@ def sigmaToDepth(mod_data, mod_depth, siglay):
     Outputs a 2D numpy array representing the FVCOM matrix in ADCP format.
     '''
 
-    bin_mod = np.zeros(mod_data.shape[0], NUM_BINS)
+    bin_mod = np.zeros(mod_data.shape[0], bins.size)
+    bin_width = bins[1] - bins[0]
 
     # loop through columns/steps
     for i, column in enumerate(mod_data):
@@ -61,10 +59,10 @@ def sigmaToDepth(mod_data, mod_depth, siglay):
 	depth = mod_depth[i]
 
 	# loop through bins
-	for j in np.arange(NUM_BINS):
+	for j in np.arange(bins.size):
 
 	    # check if location is above ADCP_TOP_SURF
-	    loc = float(BIN_WIDTH * j) / float(depth)
+	    loc = float(bins_width * j) / float(depth)
 	    if (loc <= ADCP_TOP_SURF):
 		bin_mod[i][j] = f_mod(loc)
 	    else:
