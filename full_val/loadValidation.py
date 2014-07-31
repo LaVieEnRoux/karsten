@@ -30,8 +30,8 @@ def loadValidation(files):
 
     	    # check if site is a tidegauge site
     	    if (site['type'] != 'TideGauge'):
-    	        (elev_suite, speed_suite, dir_suite, u_val, v_val, vel_val) \
-		    = compareUV(site)
+    	        (elev_suite, speed_suite, dir_suite, u_suite, v_suite, 
+                 vel_suite) = compareUV(site)
 		site['elev_val'] = elev_suite
     	        site['speed_val'] = speed_suite
     	        site['dir_val'] = dir_suite
@@ -44,7 +44,7 @@ def loadValidation(files):
     	        site['tg_val'] = elev_suite_dg
 		print 'Tide Gauge loaded'
 
-        filename_out = run + '_val_struct.p'
+        filename_out = files[run]
         out_f = open(filename_out, 'wb')
         pickle.dump(struct, out_f)
 	out_f.close()

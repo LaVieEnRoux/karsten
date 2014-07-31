@@ -63,12 +63,13 @@ def compareUV(data):
 
 	# redo speed and direction and set interpolated variables
 	mod_sp_int = np.sqrt(pred_uv[0]**2 + pred_uv[1]**2)
-	mod_ssp_int = mod_sp_int * np.sign(pred_uv[1])
+	mod_ve_int = mod_sp_int * np.sign(pred_uv[1])
 	mod_dr_int = np.arctan2(pred_uv[0], pred_uv[1]) * 180 / np.pi
 	mod_el_int = pred_h[0]
 	mod_u_int = pred_uv[0]
 	mod_v_int = pred_uv[1]
 	obs_sp_int = obs_spd
+	obs_ve_int = obs_spd * np.sign(obs_v)
 	obs_dr_int = obs_dir
 	obs_el_int = obs_el
 	obs_u_int = obs_u
@@ -122,11 +123,11 @@ def compareUV(data):
     dir_suite = tidalSuite(mod_dr_int, obs_dr_int, step_int, start_int,
 			    type='direction', plot=False)
     u_suite = tidalSuite(mod_u_int, obs_u_int, step_int, start_int,
-			    type='u velocity', plot=True)
+			    type='u velocity', plot=False)
     v_suite = tidalSuite(mod_v_int, obs_v_int, step_int, start_int,
-			    type='v velocity', plot=True)
+			    type='v velocity', plot=False)
     vel_suite = tidalSuite(mod_ve_int, obs_ve_int, step_int, start_int,
-			    type='velocity', plot=True)
+			    type='velocity', plot=False)
     #ebb_suite = tidalSuite(mod_ebb, obs_ebb, step_int, start_int,
 	#		    type='ebb', plot=True)
     #flo_suite = tidalSuite(mod_flo, obs_flo, step_int, start_int,

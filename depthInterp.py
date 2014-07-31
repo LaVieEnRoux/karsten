@@ -61,7 +61,7 @@ def sigmaToDepth(mod_data, mod_depth, siglay, bins):
 	for j in np.arange(bins.size):
 
 	    # check if location is above ADCP_TOP_SURF
-	    loc = float(bins_width * j) / float(depth)
+	    loc = float(bins_width * j + bins[0]) / float(depth)
 	    if (loc <= ADCP_TOP_SURF):
 		bin_mod[i][j] = f_mod(loc)
 	    else:
