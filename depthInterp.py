@@ -14,7 +14,7 @@ The top ADCP value of any column is no greater than 95% of the total depth
 
 ADCP_TOP_SURF = 0.95
 
-def depthToSigma(obs_data, obs_depth, siglay):
+def depthToSigma(obs_data, obs_depth, siglay, bins):
     '''
     Performs linear interpolation on 3D ADCP data to change it into a sigma
     layer format, similar to an FVCOM run.
@@ -30,8 +30,7 @@ def depthToSigma(obs_data, obs_depth, siglay):
 
 	# map old depths to between 0 and 1, make interpolation function
 	col_nonan = column[np.where(~np.isnan(column))[0]]
-	old_depths = np.arange(0, obs_depth[i] * ADCP_TOP_SURF, 
-		     1. / col_nonan.size)
+	old_depths = bins[np.where(~np.isnan(column))[0]]
 	mapped_depths = old_depths / obs_depth[i]
 	f_obs = interp1d(col_nonan, mapped_depths)
 
@@ -71,7 +70,7 @@ def sigmaToDepth(mod_data, mod_depth, siglay, bins):
     return bin_mod
 
 def depthFromSurf(mod_data, mod_depth, siglay, 
-		  obs_data, obs_depth, depth=5):
+		  obs_data, obs_depth, bins, depth=5):
     '''
     Performs linear interpolation on 3D ocean data to obtain data at a
     specific distance from the surface.
@@ -109,9 +108,8 @@ def depthFromSurf(mod_data, mod_depth, siglay,
 
 	# create interpolation function
 	col_nonan = column[np.where(~np.isnan(column))[0]]
-	top_depth = ADCP_TOP_SURF * obs_depth[ii]
-	index = np.arange(0, top_depth, 1. / col_nonan.size)
-	f_obs = interp1d(column, index)
+	bin_nonan = bins[np.where(~np.isnan(column))[0]]
+	f_obs = interp1d(column, bin_nonan)
 
 	# find location of specified depth and perform interpolation
 	location = obs_depth[ii] - depth
