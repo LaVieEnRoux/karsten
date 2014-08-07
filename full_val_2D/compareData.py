@@ -4,6 +4,8 @@ from tidalStats import TidalStats
 from smooth import smooth
 from datetime import datetime, timedelta
 from utide import ut_reconstr
+import matplotlib.pyplot as plt
+from save_FlowFile_BPFormat import sign_speed, get_DirFromN
 
 def dn2dt(datenum):
     '''
@@ -29,8 +31,8 @@ def compareUV(data):
     mod_u = data['mod_timeseries']['ua']
     mod_v = data['mod_timeseries']['va']
     mod_el = data['mod_timeseries']['elev']
-    obs_u = data['obs_timeseries']['u']
-    obs_v = data['obs_timeseries']['v']
+    obs_u = data['obs_timeseries']['ua']
+    obs_v = data['obs_timeseries']['va']
     obs_el = data['obs_timeseries']['elev']
     v_mod_harm = data['vel_mod_harmonics']
     v_obs_harm = data['vel_obs_harmonics']
@@ -61,12 +63,13 @@ def compareUV(data):
 
 	# redo speed and direction and set interpolated variables
 	mod_sp_int = np.sqrt(pred_uv[0]**2 + pred_uv[1]**2)
-	mod_ssp_int = mod_sp_int * np.sign(pred_uv[1])
+	mod_ve_int = mod_sp_int * np.sign(pred_uv[1])
 	mod_dr_int = np.arctan2(pred_uv[1], pred_uv[0]) * 180 / np.pi
-	mod_el_int = pred_h
+	mod_el_int = pred_h[0]
 	mod_u_int = pred_uv[0]
 	mod_v_int = pred_uv[1]
 	obs_sp_int = obs_spd
+	obs_ve_int = obs_spd * np.sign(obs_v)
 	obs_dr_int = obs_dir
 	obs_el_int = obs_el
 	obs_u_int = obs_u
@@ -100,6 +103,17 @@ def compareUV(data):
 	(mod_ve_int, obs_ve_int, step_int, start_int) = \
 	    smooth(mod_spd * np.sign(mod_v), mod_dt, 
 		   obs_spd * np.sign(obs_v), obs_dt)
+    '''
+    # separate into ebb and flow
+    mod_dir_n = get_DirFromN(mod_u_int, mod_v_int)
+    obs_dir_n = get_DirFromN(obs_u_int, mod_v_int)
+    mod_signed_s, mod_PA = sign_speed(mod_u_int, mod_v_int, mod_sp_int,
+				      mod_dr_int, 0)
+    obs_signed_s, obs_PA = sign_speed(obs_u_int, obs_v_int, obs_sp_int,
+				      obs_dr_int, 0)
+    print mod_signed_s[:20], mod_PA[:20]
+    print obs_signed_s[:20], obs_PA[:20]
+    '''
 
     # remove directions where velocities are small
     MIN_VEL = 0.5
@@ -109,30 +123,23 @@ def compareUV(data):
 	if (mod_sp_int[i] < MIN_VEL):
 	    mod_dr_int[i] = np.nan
 
-    # create ebb and flow data
-    #mod_ebb = np.select([mod_dr_int < 0], [mod_dr_int], default=np.nan)
-    #obs_ebb = np.select([obs_dr_int < 0], [obs_dr_int], default=np.nan)
-    #mod_flo = np.select([mod_dr_int > 0], [mod_dr_int], default=np.nan)
-    #obs_flo = np.select([obs_dr_int > 0], [obs_dr_int], default=np.nan)
-
     # get stats for each tidal variable
     elev_suite = tidalSuite(mod_el_int, obs_el_int, step_int, start_int,
-			    type='elevation', plot=True)
+			    type='elevation', plot=False)
     speed_suite = tidalSuite(mod_sp_int, obs_sp_int, step_int, start_int,
-			    type='speed', plot=True)
+			    type='speed', plot=False)
     dir_suite = tidalSuite(mod_dr_int, obs_dr_int, step_int, start_int,
-			    type='direction', plot=True)
+			    type='direction', plot=False)
     u_suite = tidalSuite(mod_u_int, obs_u_int, step_int, start_int,
-			    type='u velocity', plot=True)
+			    type='u velocity', plot=False)
     v_suite = tidalSuite(mod_v_int, obs_v_int, step_int, start_int,
-			    type='v velocity', plot=True)
+			    type='v velocity', plot=False)
     vel_suite = tidalSuite(mod_ve_int, obs_ve_int, step_int, start_int,
-			    type='velocity', plot=True)
+			    type='velocity', plot=False)
     #ebb_suite = tidalSuite(mod_ebb, obs_ebb, step_int, start_int,
 	#		    type='ebb', plot=True)
     #flo_suite = tidalSuite(mod_flo, obs_flo, step_int, start_int,
 	#		    type='flow', plot=True)
-
     # output statistics in useful format
     return (elev_suite, speed_suite, dir_suite, u_suite, v_suite, vel_suite)
 
@@ -158,7 +165,7 @@ def tidalSuite(model, observed, step, start, type,
 
     return stats_suite
 
-def compareTG(data, site):
+def compareTG(data):
     '''
     Does a comprehensive comparison between tide gauge height data and
     modeled data, much like the above function.
@@ -166,22 +173,12 @@ def compareTG(data, site):
     Input is a dictionary containing all necessary tide gauge and model data.
     Outputs a dictionary of useful statistics.
     '''
-    # set up keys based on site input
-    el_key = 'el{}'.format(site)
-    dat_key = '{}_tg_data'.format(site)
-    time_key = '{}_time'.format(site)
-    obs_harm_key = '{}_tidegauge_harmonics'.format(site)
-    mod_harm_key = '{}_mod_harmonics'.format(site)
-
     # load data
-    mod_elev = data[el_key]
-    obs_elev = data[dat_key]
-    obs_datenums = data[time_key]
+    mod_elev = data['mod_timeseries']['elev']
+    obs_elev = data['obs_timeseries']['elev']
+    obs_datenums = data['obs_time']
     mod_datenums = data['mod_time']
-    mod_harm = data[mod_harm_key]
-
-    # subtract mean from tidegauge stuff
-    obs_elev = obs_elev - np.mean(obs_elev)
+    mod_harm = data['elev_mod_harmonics']
 
     # convert times and grab values
     obs_time, mod_time = [], []
@@ -189,7 +186,6 @@ def compareTG(data, site):
 	obs_time.append(dn2dt(v))
     for j, w in enumerate(mod_datenums):
 	mod_time.append(dn2dt(w))
-
 
     # check if they line up in the time domain
     if (mod_time[-1] < obs_time[0] or obs_time[-1] < mod_time[0]):
@@ -203,19 +199,14 @@ def compareTG(data, site):
     else:
 
         # interpolate timeseries onto a common timestep
-        obs_dict = loadDict(obs_elev, obs_time)
-        mod_dict = loadDict(mod_elev, mod_time)
         (obs_elev_int, mod_elev_int, step_int, start_int) = \
-            interpol(mod_dict, obs_dict)
-
+            smooth(mod_elev, mod_time, obs_elev, obs_time)
 
     # get validation statistics
-    stats = TidalStats(obs_elev_int, mod_elev_int, step_int, start_int,
-		       type='height')
+    stats = TidalStats(mod_elev_int, obs_elev_int, step_int, start_int,
+		       debug=True, type='height')
     elev_suite = stats.getStats()
     elev_suite['r_squared'] = stats.linReg()['r_2']
     elev_suite['phase'] = stats.getPhase(debug=False)
-
-    stats.plotData()
 
     return elev_suite
