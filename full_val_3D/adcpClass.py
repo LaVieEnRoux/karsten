@@ -8,7 +8,7 @@ class Struct:
 
 class ADCP:
 
-    def __init__(self, filename, percent_of_depth=1):
+    def __init__(self, filename, percent_of_depth=0.95):
 
         self.percent_of_depth = percent_of_depth
         self.load(filename)
@@ -36,11 +36,10 @@ class ADCP:
             self.bins = self.data.bins[:].flatten()
             self.north_vel = self.data.north_vel[:]
             self.east_vel = self.data.east_vel[:]
+	    print 'Class shape: {}'.format(self.east_vel.shape)
             self.vert_vel = self.data.vert_vel[:]
             self.dir_vel = self.data.dir_vel[:]
             self.mag_signed_vel = self.data.mag_signed_vel[:]
-            self.ucross = self.data.ucross[:]
-            self.ualong = self.data.ualong[:]
 
             self.pressure = self.mat['pres']
             self.surf = self.pressure.surf[:]
@@ -76,14 +75,17 @@ class ADCP:
         choosen by the user. Currently only working for east_vel (u) and
         north_vel (v) '''
 
+        '''
         ind = np.argwhere(self.bins < self.percent_of_depth * self.surf[:,None])
         index = ind[np.r_[ind[1:,0] != ind[:-1,0], True]]
         data_ma_u = np.ma.array(self.east_vel, mask=np.arange(self.east_vel.shape[1]) > index[:, 1, None])
         data_ma_v = np.ma.array(self.north_vel, mask=np.arange(self.north_vel.shape[1]) > index[:, 1, None])
         self.ua = np.array(data_ma_u.mean(axis=1))
         self.va = np.array(data_ma_v.mean(axis=1))
+        '''
 
-
+	self.ua = np.nanmean(self.east_vel, axis=1)
+	self.va = np.nanmean(self.north_vel, axis=1)
 
 if __name__ == '__main__':
     filename = 'Flow_GP-100915-BPa.mat'

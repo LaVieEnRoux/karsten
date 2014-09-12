@@ -95,8 +95,8 @@ def depthFromSurf(mod_data, mod_depth, siglay,
     # loop over mod_data columns
     for i, step in enumerate(mod_data):
 
-        # create interpolation function
-	f_mod = interp1d(step, siglay)
+        # create interp function, reverse step so it starts from sea floor
+	f_mod = interp1d(siglay, step[::-1])
 
 	# find location of specified depth and perform interpolation
 	location = mod_depth[i] - depth
@@ -109,10 +109,10 @@ def depthFromSurf(mod_data, mod_depth, siglay,
 	# create interpolation function
 	col_nonan = column[np.where(~np.isnan(column))[0]]
 	bin_nonan = bins[np.where(~np.isnan(column))[0]]
-	f_obs = interp1d(column, bin_nonan)
+	f_obs = interp1d(bin_nonan, col_nonan)
 
 	# find location of specified depth and perform interpolation
 	location = obs_depth[ii] - depth
-	new_obs[i] = f_obs(location)
+	new_obs[ii] = f_obs(location)
 
     return (new_mod, new_obs)

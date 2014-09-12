@@ -3,7 +3,7 @@ from tidalStats import TidalStats
 #from interpolate import interpol
 from smooth import smooth
 from datetime import datetime, timedelta
-from utide import ut_reconstr
+from utide import ut_reconstr, ut_solv
 import matplotlib.pyplot as plt
 from depthInterp import depthFromSurf
 from save_FlowFile_BPFormat import sign_speed, get_DirFromN
@@ -29,26 +29,47 @@ def compareUV(data):
     # take data from input dictionary
     mod_time = data['mod_time']
     obs_time = data['obs_time']
-    mod_u_all = data['mod_timeseries']['u']
-    mod_v_all = data['mod_timeseries']['v']
+    print 'Loading mod timeseries'
+    mod_u_all = data['mod_timeseries']['u'][:, :, 0]
+    mod_v_all = data['mod_timeseries']['v'][:, :, 0]
     mod_el = data['mod_timeseries']['elev']
+    print 'Loading obs timeseries'
     obs_u_all = data['obs_timeseries']['u']
     obs_v_all = data['obs_timeseries']['v']
     obs_el = data['obs_timeseries']['elev']
-    v_mod_harm = data['vel_mod_harmonics']
     v_obs_harm = data['vel_obs_harmonics']
     el_mod_harm = data['elev_mod_harmonics']
     el_obs_harm = data['elev_mod_harmonics']
     bins = data['obs_timeseries']['bins']
-    siglay = data['mod_timeseries']['siglay']
+    sig = -data['mod_timeseries']['siglay'][:, 0]
+
+    # for some reason, the siglayers are repeated within siglay
+    # this bit of code will pick out only one of those repetitions
+    siglay = []
+    for i, v in enumerate(sig):
+	siglay.append(v)
+	if (sig[i + 1] < v):
+	    break
+    siglay = np.asarray(siglay)
+
+    print 'siglay: {}'.format(siglay)
+    print 'mod shape: {}'.format(mod_u_all.shape)
+    print 'obs shape: {}'.format(obs_u_all.shape)
 
     # use depth interpolation to get a single timeseries
+    print 'Performing depth interpolation'
     mod_depth = mod_el + np.mean(obs_el)
     (mod_u, obs_u) = depthFromSurf(mod_u_all, mod_depth, siglay,
 				   obs_u_all, obs_el, bins)
     (mod_v, obs_v) = depthFromSurf(mod_v_all, mod_depth, siglay,
                                    obs_v_all, obs_el, bins)
+    print 'Depth interpolation completed'
 
+    # create new coefs based on depth interpolated timeseries
+    v_mod_harm = ut_solv(mod_time, mod_u, mod_v, 
+                         data['lat'], cnstit='auto', 
+			 rmin=0.95, notrend=True, method='ols', nodiagn=True, 
+			 linci=True, conf_int=True)
 
     # convert times to datetime
     mod_dt, obs_dt = [], []
@@ -136,9 +157,9 @@ def compareUV(data):
 
     # get stats for each tidal variable
     elev_suite = tidalSuite(mod_el_int, obs_el_int, step_int, start_int,
-			    type='elevation', plot=False)
+			    type='elevation', plot=True)
     speed_suite = tidalSuite(mod_sp_int, obs_sp_int, step_int, start_int,
-			    type='speed', plot=False)
+			    type='speed', plot=True)
     dir_suite = tidalSuite(mod_dr_int, obs_dr_int, step_int, start_int,
 			    type='direction', plot=False)
     u_suite = tidalSuite(mod_u_int, obs_u_int, step_int, start_int,

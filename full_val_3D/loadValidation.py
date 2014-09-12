@@ -22,8 +22,10 @@ def loadValidation(files):
     for run in files:
 
 	# load in struct
+	print 'Loading struct'
 	struct_f = open(files[run], 'rb')
 	struct = pickle.load(struct_f)
+	print 'Struct loaded'
 
         # iterate through the sites in the run
         for site in struct:

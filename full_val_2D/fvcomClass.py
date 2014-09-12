@@ -129,7 +129,6 @@ class FVCOM:
             self.latc = np.hstack((self.latc, latc))
             self.h = np.hstack((self.h, h))
             self.time = np.hstack((self.time, time))
-
             if i == 0:
                 self.siglay = siglay
                 self.siglev = siglev
@@ -167,8 +166,7 @@ class FVCOM:
         # WES_COMMENT: This has been hardcoded, and once we have a regular
         # naming convention a hard-coded name will work fine.
 
-        name = 'dngrid_0*.nc'
-        name = 'small*.nc'
+        name = 'dngrid_[!station]*.nc'
         self.matches = []
         for root, dirnames, filenames in os.walk(filename):
             for filename in fnmatch.filter(filenames, name):
@@ -279,9 +277,7 @@ class FVCOM:
         self.elev = self.data.variables['zeta'][:, self.region_n]
 
         try:
-            self.ww = self.data.variables['ww'][:, :, self.region_e]
-            self.u = self.data.variables['u'][:, :, self.region_e]
-            self.v = self.data.variables['v'][:, :, self.region_e]
+	    # remove specific variables that we don't need for 2D validation
             self.ua = self.data.variables['ua'][:, self.region_e]
             self.va = self.data.variables['va'][:, self.region_e]
             self.D3 = True

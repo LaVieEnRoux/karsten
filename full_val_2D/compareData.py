@@ -125,7 +125,7 @@ def compareUV(data):
 
     # get stats for each tidal variable
     elev_suite = tidalSuite(mod_el_int, obs_el_int, step_int, start_int,
-			    type='elevation', plot=False)
+			    type='elevation', plot=True)
     speed_suite = tidalSuite(mod_sp_int, obs_sp_int, step_int, start_int,
 			    type='speed', plot=False)
     dir_suite = tidalSuite(mod_dr_int, obs_dr_int, step_int, start_int,
@@ -135,7 +135,7 @@ def compareUV(data):
     v_suite = tidalSuite(mod_v_int, obs_v_int, step_int, start_int,
 			    type='v velocity', plot=False)
     vel_suite = tidalSuite(mod_ve_int, obs_ve_int, step_int, start_int,
-			    type='velocity', plot=False)
+			    type='velocity', plot=True)
     #ebb_suite = tidalSuite(mod_ebb, obs_ebb, step_int, start_int,
 	#		    type='ebb', plot=True)
     #flo_suite = tidalSuite(mod_flo, obs_flo, step_int, start_int,
